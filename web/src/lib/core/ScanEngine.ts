@@ -4,7 +4,7 @@ import * as os from 'os';
 import { createHash } from 'crypto';
 import { execSync } from 'child_process';
 import { eq, and } from 'drizzle-orm';
-import { db } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { files, fileVersions, tags, scanHistory, scanSources } from '@/lib/db/schema';
 import { toolRegistry, getToolById, resolveProjectDir, type ToolDefinition } from './ToolRegistry';
 import { formatMatrix } from './FormatMatrix';
@@ -61,7 +61,7 @@ export class ScanEngine {
     const detectedTools = results.filter((r) => r.detected).length;
 
     // 记录扫描历史
-    await db.insert(scanHistory).values({
+    await getDb().insert(scanHistory).values({
       id: scanId,
       toolId: null,
       scanType: 'full',
@@ -187,7 +187,7 @@ export class ScanEngine {
       for (const promptPath of tool.promptPaths) {
         const expandedPath = resolvePromptPath(promptPath);
         try {
-          await db.insert(scanSources).values({
+          await getDb().insert(scanSources).values({
             id: generateId(),
             toolId: tool.id,
             sourcePath: expandedPath,
@@ -243,7 +243,7 @@ export class ScanEngine {
     const contentHash = createHash('sha256').update(pif.content ?? content).digest('hex');
 
     // 检查是否已存在同路径的文件
-    const existing = await db.select().from(files)
+    const existing = await getDb().select().from(files)
       .where(and(eq(files.sourceType, 'environment_scan'), eq(files.filePath, filePath)))
       .limit(1);
 
@@ -252,7 +252,7 @@ export class ScanEngine {
       if (file.contentHash === contentHash) return 'skipped';
 
       // 更新
-      await db.update(files).set({
+      await getDb().update(files).set({
         content: pif.content ?? content,
         contentHash,
         version: (file.version ?? 0) + 1,
@@ -260,7 +260,7 @@ export class ScanEngine {
       }).where(eq(files.id, file.id));
 
       // 创建版本记录
-      await db.insert(fileVersions).values({
+      await getDb().insert(fileVersions).values({
         id: generateId(),
         fileId: file.id,
         version: (file.version ?? 0) + 1,
@@ -275,7 +275,7 @@ export class ScanEngine {
 
     // 插入新文件
     const fileId = generateId();
-    await db.insert(files).values({
+    await getDb().insert(files).values({
       id: fileId,
       name: pif.name ?? fileName,
       slug,
@@ -303,7 +303,7 @@ export class ScanEngine {
     });
 
     // 添加工具标签
-    await db.insert(tags).values({
+    await getDb().insert(tags).values({
       id: generateId(),
       fileId,
       dimension: 'tool',
@@ -313,7 +313,7 @@ export class ScanEngine {
     });
 
     // 添加来源类型标签
-    await db.insert(tags).values({
+    await getDb().insert(tags).values({
       id: generateId(),
       fileId,
       dimension: 'source_type',
@@ -323,7 +323,7 @@ export class ScanEngine {
     });
 
     // 创建初始版本
-    await db.insert(fileVersions).values({
+    await getDb().insert(fileVersions).values({
       id: generateId(),
       fileId,
       version: 1,
@@ -340,7 +340,7 @@ export class ScanEngine {
    * 获取扫描历史
    */
   async getScanHistory(limit = 20): Promise<typeof scanHistory.$inferSelect[]> {
-    return db
+    return getDb()
       .select()
       .from(scanHistory)
       .orderBy(scanHistory.startedAt)

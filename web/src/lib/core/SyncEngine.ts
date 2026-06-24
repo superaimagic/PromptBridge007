@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as os from 'os';
 import { createHash } from 'crypto';
 import { eq, and, desc } from 'drizzle-orm';
-import { db } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { files, deployments, tags } from '@/lib/db/schema';
 import { getToolById, toolRegistry, type ToolDefinition } from './ToolRegistry';
 import { formatMatrix } from './FormatMatrix';
@@ -67,7 +67,7 @@ export class SyncEngine {
    */
   async syncAll(direction: SyncDirection): Promise<SyncResult[]> {
     // 获取所有有部署记录的工具
-    const deploymentRows = await db
+    const deploymentRows = await getDb()
       .select({ toolId: deployments.toolId })
       .from(deployments)
       .groupBy(deployments.toolId);
@@ -89,7 +89,7 @@ export class SyncEngine {
     const conflicts: SyncResult['conflicts'] = [];
 
     // 获取该工具的所有部署记录
-    const deploymentRows = await db
+    const deploymentRows = await getDb()
       .select()
       .from(deployments)
       .where(eq(deployments.toolId, tool.id));
@@ -147,7 +147,7 @@ export class SyncEngine {
     const conflicts: SyncResult['conflicts'] = [];
 
     // 获取该工具的所有部署记录
-    const deploymentRows = await db
+    const deploymentRows = await getDb()
       .select()
       .from(deployments)
       .where(eq(deployments.toolId, tool.id));
@@ -183,7 +183,7 @@ export class SyncEngine {
         }
 
         // 检查数据库中的文件是否在部署后被修改过
-        const fileRows = await db.select().from(files).where(eq(files.id, deployment.fileId)).limit(1);
+        const fileRows = await getDb().select().from(files).where(eq(files.id, deployment.fileId)).limit(1);
         if (fileRows.length === 0) continue;
 
         const file = fileRows[0];
@@ -202,7 +202,7 @@ export class SyncEngine {
 
         // 用磁盘内容更新数据库
         const contentHash = createContentHash(pif.content ?? diskContent);
-        await db.update(files).set({
+        await getDb().update(files).set({
           content: pif.content ?? diskContent,
           contentHash,
           name: pif.name ?? file.name,
@@ -211,7 +211,7 @@ export class SyncEngine {
         }).where(eq(files.id, file.id));
 
         // 更新部署记录
-        await db.update(deployments).set({
+        await getDb().update(deployments).set({
           deployedContent: diskContent,
           status: 'success',
           updatedAt: new Date().toISOString(),
@@ -241,7 +241,7 @@ export class SyncEngine {
     const results: ToolSyncStatus[] = [];
 
     for (const tool of toolRegistry) {
-      const deploymentRows = await db
+      const deploymentRows = await getDb()
         .select()
         .from(deployments)
         .where(eq(deployments.toolId, tool.id))

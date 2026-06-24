@@ -1,0 +1,1 @@
+﻿INSERT OR IGNORE INTO projects (id, name, path, description, is_default, created_at, updated_at) VALUES ('default-project', 'Default Project', 'G:\WWW\PromptBridge007\web', 'Default project directory', 0, NULL, NULL);

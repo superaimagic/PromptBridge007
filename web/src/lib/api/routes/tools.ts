@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { db } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { tools } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { success, error } from '../types';
@@ -8,7 +8,7 @@ const router = new Hono();
 
 router.get('/', async (c) => {
   try {
-    const records = await db.select().from(tools).where(eq(tools.isActive, true));
+    const records = await getDb().select().from(tools).where(eq(tools.isActive, true));
 
     const data = records.map(t => ({
       id: t.id,

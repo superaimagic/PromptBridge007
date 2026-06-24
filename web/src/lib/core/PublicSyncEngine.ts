@@ -5,7 +5,7 @@ import { execSync } from 'child_process';
 import { createHash } from 'crypto';
 import { nanoid } from 'nanoid';
 import { eq, and } from 'drizzle-orm';
-import { db } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { files, tags, publicSources } from '@/lib/db/schema';
 import { formatMatrix } from './FormatMatrix';
 
@@ -34,7 +34,7 @@ export class PublicSyncEngine {
    * Sync a public source repository
    */
   async syncSource(sourceId: string): Promise<SyncSourceResult> {
-    const sourceRows = await db.select().from(publicSources).where(eq(publicSources.id, sourceId)).limit(1);
+    const sourceRows = await getDb().select().from(publicSources).where(eq(publicSources.id, sourceId)).limit(1);
     if (sourceRows.length === 0) {
       return {
         sourceId,
@@ -118,7 +118,7 @@ export class PublicSyncEngine {
       }
 
       // Update source record
-      await db.update(publicSources).set({
+      await getDb().update(publicSources).set({
         localPath,
         lastSyncAt: new Date().toISOString(),
         lastCommitHash: currentHash,
@@ -217,7 +217,7 @@ export class PublicSyncEngine {
     const relativePath = path.relative(localPath, filePath);
 
     // Check existing by repoUrl + filePath
-    const existing = await db.select().from(files)
+    const existing = await getDb().select().from(files)
       .where(and(eq(files.repoUrl, source.repoUrl), eq(files.filePath, relativePath)))
       .limit(1);
 
@@ -225,7 +225,7 @@ export class PublicSyncEngine {
       const file = existing[0];
       if (file.contentHash === contentHash) return 'skipped';
 
-      await db.update(files).set({
+      await getDb().update(files).set({
         content: pif.content ?? content,
         contentHash,
         name: effectiveName ?? fileName,
@@ -238,11 +238,11 @@ export class PublicSyncEngine {
 
     // Insert new
     const fileId = nanoid(12);
-    const slug = effectiveName.toLowerCase().replace(/[^\w\u4e00-\u9fff]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80) + '-' + nanoid(6);
+    const slug = (effectiveName ?? fileName).toLowerCase().replace(/[^\w\u4e00-\u9fff]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80) + '-' + nanoid(6);
 
-    await db.insert(files).values({
+    await getDb().insert(files).values({
       id: fileId,
-      name: effectiveName,
+      name: effectiveName ?? fileName,
       slug,
       content: pif.content ?? content,
       format: 'markdown',
@@ -267,7 +267,7 @@ export class PublicSyncEngine {
     });
 
     // Add source_type tag
-    await db.insert(tags).values({
+    await getDb().insert(tags).values({
       id: nanoid(12),
       fileId,
       dimension: 'source_type',
@@ -287,7 +287,7 @@ export class PublicSyncEngine {
     };
     const toolTag = toolTagMap[dirName.toUpperCase()];
     if (toolTag) {
-      await db.insert(tags).values({
+      await getDb().insert(tags).values({
         id: nanoid(12),
         fileId,
         dimension: 'tool',
@@ -298,7 +298,7 @@ export class PublicSyncEngine {
     }
 
     // Add domain tag
-    await db.insert(tags).values({
+    await getDb().insert(tags).values({
       id: nanoid(12),
       fileId,
       dimension: 'domain',

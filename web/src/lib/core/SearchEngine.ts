@@ -1,4 +1,4 @@
-import { db } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { files, tags } from '@/lib/db/schema';
 import { eq, isNull, like, or, and, desc, sql, inArray } from 'drizzle-orm';
 
@@ -57,7 +57,7 @@ export class SearchEngine {
     }
 
     // Get files
-    const fileRows = await db.select({
+    const fileRows = await getDb().select({
       id: files.id,
       name: files.name,
       slug: files.slug,
@@ -85,7 +85,7 @@ export class SearchEngine {
           and(eq(tags.dimension, dim), eq(tags.value, val))
         );
 
-        const tagRows = await db.select().from(tags)
+        const tagRows = await getDb().select().from(tags)
           .where(and(
             inArray(tags.fileId, fileIds),
             ...tagConditions
@@ -138,7 +138,7 @@ export class SearchEngine {
     // Get tags for results
     if (paginated.length > 0) {
       const resultIds = paginated.map(f => f.id);
-      const tagRows = await db.select().from(tags)
+      const tagRows = await getDb().select().from(tags)
         .where(inArray(tags.fileId, resultIds));
 
       for (const tag of tagRows) {
@@ -171,7 +171,7 @@ export class SearchEngine {
     tags: Record<string, string[]>;
   }>> {
     // Get the file's tags
-    const tagRows = await db.select().from(tags).where(eq(tags.fileId, fileId));
+    const tagRows = await getDb().select().from(tags).where(eq(tags.fileId, fileId));
 
     if (tagRows.length === 0) {
       const result = await this.search({ limit });
@@ -181,7 +181,7 @@ export class SearchEngine {
     // Find files with matching tags
     const matchingFileIds = new Map<string, number>();
     for (const tag of tagRows) {
-      const sameTagFiles = await db.select({ fileId: tags.fileId }).from(tags)
+      const sameTagFiles = await getDb().select({ fileId: tags.fileId }).from(tags)
         .where(and(eq(tags.dimension, tag.dimension), eq(tags.value, tag.value)));
 
       for (const f of sameTagFiles) {
@@ -203,7 +203,7 @@ export class SearchEngine {
     }
 
     // Get file details
-    const fileRows = await db.select().from(files)
+    const fileRows = await getDb().select().from(files)
       .where(and(inArray(files.id, sorted), isNull(files.deletedAt)));
 
     return fileRows.map(f => ({

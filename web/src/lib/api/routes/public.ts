@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
-import { db } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { publicSources } from '@/lib/db/schema';
 import { publicSyncEngine } from '@/lib/core/PublicSyncEngine';
 import { success, error, now, validateInput } from '../types';
@@ -10,7 +10,7 @@ const router = new Hono();
 
 router.get('/', async (c) => {
   try {
-    const records = await db.select().from(publicSources).where(eq(publicSources.isActive, true));
+    const records = await getDb().select().from(publicSources).where(eq(publicSources.isActive, true));
 
     const data = records.map(s => ({
       id: s.id,
@@ -51,7 +51,7 @@ router.post('/', async (c) => {
     const id = nanoid(12);
     const timestamp = now();
 
-    await db.insert(publicSources).values({
+    await getDb().insert(publicSources).values({
       id,
       name,
       repoUrl: repo_url,
@@ -81,7 +81,7 @@ router.post('/', async (c) => {
 router.post('/:source_id/sync', async (c) => {
   try {
     const sourceId = c.req.param('source_id');
-    const records = await db.select().from(publicSources).where(eq(publicSources.id, sourceId));
+    const records = await getDb().select().from(publicSources).where(eq(publicSources.id, sourceId));
 
     if (records.length === 0) {
       return c.json(error('NOT_FOUND', 'Public source not found', 404), 404);

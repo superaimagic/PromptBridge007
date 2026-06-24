@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { eq, and, desc } from 'drizzle-orm';
-import { db } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { deployments, files } from '@/lib/db/schema';
 import { getToolById, type ToolDefinition } from './ToolRegistry';
 import { formatMatrix, type PIFEntity } from './FormatMatrix';
@@ -47,7 +47,7 @@ export class DeployEngine {
     const now = new Date().toISOString();
 
     // 获取文件信息
-    const fileRows = await db
+    const fileRows = await getDb()
       .select()
       .from(files)
       .where(eq(files.id, request.fileId))
@@ -142,7 +142,7 @@ export class DeployEngine {
         errorMessage: 'Invalid target path: path traversal detected',
         deployedAt: now,
       };
-      await db.insert(deployments).values({
+      await getDb().insert(deployments).values({
         id: deployId,
         fileId: request.fileId,
         toolId: request.toolId,
@@ -175,7 +175,7 @@ export class DeployEngine {
     }
 
     // 记录部署
-    await db.insert(deployments).values({
+    await getDb().insert(deployments).values({
       id: deployId,
       fileId: request.fileId,
       toolId: request.toolId,
@@ -272,7 +272,7 @@ export class DeployEngine {
    * 获取部署状态
    */
   async getDeploymentStatus(fileId: string, toolId: string): Promise<typeof deployments.$inferSelect | null> {
-    const rows = await db
+    const rows = await getDb()
       .select()
       .from(deployments)
       .where(and(eq(deployments.fileId, fileId), eq(deployments.toolId, toolId)))
@@ -285,7 +285,7 @@ export class DeployEngine {
    * 回滚部署
    */
   async rollback(deployId: string): Promise<void> {
-    const rows = await db
+    const rows = await getDb()
       .select()
       .from(deployments)
       .where(eq(deployments.id, deployId))
@@ -308,7 +308,7 @@ export class DeployEngine {
     }
 
     // 更新部署状态
-    await db
+    await getDb()
       .update(deployments)
       .set({ status: 'failed', errorMessage: 'Rolled back', updatedAt: new Date().toISOString() })
       .where(eq(deployments.id, deployId));
@@ -319,14 +319,14 @@ export class DeployEngine {
    */
   async getDeployHistory(fileId?: string, limit = 20): Promise<typeof deployments.$inferSelect[]> {
     if (fileId) {
-      return db
+      return getDb()
         .select()
         .from(deployments)
         .where(eq(deployments.fileId, fileId))
         .orderBy(desc(deployments.createdAt))
         .limit(limit);
     }
-    return db
+    return getDb()
       .select()
       .from(deployments)
       .orderBy(desc(deployments.createdAt))

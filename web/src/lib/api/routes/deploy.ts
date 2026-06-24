@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { eq, and, desc, sql as drizzleSql, SQL } from 'drizzle-orm';
-import { db } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { deployments, files, projects } from '@/lib/db/schema';
 import { deployEngine } from '@/lib/core/DeployEngine';
 import { success, error, validateInput } from '../types';
@@ -30,7 +30,7 @@ router.post('/', async (c) => {
     // Look up project path from project_id
     let projectPath: string | undefined;
     if (project_id) {
-      const projectRows = await db.select({ path: projects.path }).from(projects).where(eq(projects.id, project_id)).limit(1);
+      const projectRows = await getDb().select({ path: projects.path }).from(projects).where(eq(projects.id, project_id)).limit(1);
       if (projectRows.length > 0) {
         projectPath = projectRows[0].path;
       }
@@ -47,7 +47,7 @@ router.post('/', async (c) => {
 
     // 更新安装计数
     if (result.status === 'success') {
-      await db.update(files)
+      await getDb().update(files)
         .set({ installCount: drizzleSql`${files.installCount} + 1` })
         .where(eq(files.id, file_id));
     }
@@ -69,7 +69,7 @@ router.post('/', async (c) => {
 router.get('/:deploy_id', async (c) => {
   try {
     const deployId = c.req.param('deploy_id');
-    const records = await db.select().from(deployments).where(eq(deployments.id, deployId));
+    const records = await getDb().select().from(deployments).where(eq(deployments.id, deployId));
 
     if (records.length === 0) {
       return c.json(error('NOT_FOUND', 'Deployment not found', 404), 404);
@@ -106,7 +106,7 @@ router.get('/', async (c) => {
     if (status) conditions.push(eq(deployments.status, status));
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
-    const records = await db.select()
+    const records = await getDb().select()
       .from(deployments)
       .where(whereClause)
       .orderBy(desc(deployments.createdAt));

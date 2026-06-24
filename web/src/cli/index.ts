@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander';
-import { db, ensureInitialized } from '../lib/db';
+import { getDb, ensureInitialized } from '../lib/db';
 import { files, tags } from '../lib/db/schema';
 import { eq, like, or, desc, isNull } from 'drizzle-orm';
 import { scanEngine } from '../lib/core/ScanEngine';
@@ -51,7 +51,7 @@ program
   .action(async (options) => {
     await ensureInitialized();
 
-    const rows = await db.select({
+    const rows = await getDb().select({
       id: files.id,
       name: files.name,
       license: files.license,
@@ -134,7 +134,7 @@ program
   .action(async (query, options) => {
     await ensureInitialized();
 
-    const rows = await db.select({
+    const rows = await getDb().select({
       id: files.id,
       name: files.name,
       license: files.license,
@@ -161,7 +161,7 @@ program
   .action(async (fileId, format) => {
     await ensureInitialized();
 
-    const rows = await db.select().from(files).where(eq(files.id, fileId)).limit(1);
+    const rows = await getDb().select().from(files).where(eq(files.id, fileId)).limit(1);
     if (rows.length === 0) {
       console.error('File not found.');
       process.exit(1);

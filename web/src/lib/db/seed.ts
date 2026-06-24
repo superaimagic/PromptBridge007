@@ -1,5 +1,5 @@
 import { nanoid } from 'nanoid';
-import { db } from './index';
+import { getDb } from './index';
 import { tools, files, tags, fileVersions, deployments, publicSources, projects } from './schema';
 import { toolRegistry } from '@/lib/core/ToolRegistry';
 import * as crypto from 'crypto';
@@ -21,7 +21,7 @@ function hash(content: string): string {
 const defaultProjectId = 'default-project';
 
 async function seedProject() {
-  await db.insert(projects).values({
+  await getDb().insert(projects).values({
     id: defaultProjectId,
     name: 'Default Project',
     path: process.cwd(),
@@ -39,7 +39,7 @@ async function seedProject() {
 
 async function seedTools() {
   for (const t of toolRegistry) {
-    await db.insert(tools).values({
+    await getDb().insert(tools).values({
       id: t.id,
       name: t.name,
       displayName: t.displayName,
@@ -147,7 +147,7 @@ async function seedPublicSources() {
     },
   ];
 
-  await db.insert(publicSources).values(sources);
+  await getDb().insert(publicSources).values(sources);
   console.log(`Seeded ${sources.length} public sources`);
 }
 
@@ -797,7 +797,7 @@ async function seedFileData(): Promise<string[]> {
     fileIds.push(fileId);
     const contentHash = hash(sf.content);
 
-    await db.insert(files).values({
+    await getDb().insert(files).values({
       id: fileId,
       slug: sf.slug,
       name: sf.name,
@@ -905,10 +905,10 @@ async function seedFileData(): Promise<string[]> {
     });
   }
 
-  await db.insert(fileVersions).values(versionRows);
+  await getDb().insert(fileVersions).values(versionRows);
   console.log(`Seeded ${versionRows.length} file versions`);
 
-  await db.insert(tags).values(tagRows);
+  await getDb().insert(tags).values(tagRows);
   console.log(`Seeded ${tagRows.length} tags`);
 
   console.log(`Seeded ${fileIds.length} files`);
@@ -988,7 +988,7 @@ async function seedDeployments(fileIds: string[]) {
     },
   ];
 
-  await db.insert(deployments).values(deploymentRows);
+  await getDb().insert(deployments).values(deploymentRows);
   console.log(`Seeded ${deploymentRows.length} deployments`);
 }
 

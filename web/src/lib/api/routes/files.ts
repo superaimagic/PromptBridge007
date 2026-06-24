@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { nanoid } from 'nanoid';
 import { eq, and, like, desc, asc, sql, inArray, isNull, SQL } from 'drizzle-orm';
-import { db } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { files, tags, fileVersions, deployments } from '@/lib/db/schema';
 import { success, error, now, sanitizeInput, validateInput, generateSlug, computeContentHash } from '../types';
 import { searchEngine } from '@/lib/core/SearchEngine';
@@ -54,7 +54,7 @@ router.get('/', async (c) => {
 
     if (tagConditions.length > 0) {
       for (const tc of tagConditions) {
-        const matchingTags = await db.select({ fileId: tags.fileId })
+        const matchingTags = await getDb().select({ fileId: tags.fileId })
           .from(tags)
           .where(and(eq(tags.dimension, tc.dimension), inArray(tags.value, tc.values)));
         const ids = matchingTags.map(t => t.fileId);
@@ -75,7 +75,7 @@ router.get('/', async (c) => {
     const whereClause = and(...conditions);
 
     // Count total
-    const countResult = await db.select({ count: sql<number>`count(*)` })
+    const countResult = await getDb().select({ count: sql<number>`count(*)` })
       .from(files)
       .where(whereClause);
     const total = countResult[0]?.count ?? 0;
@@ -89,7 +89,7 @@ router.get('/', async (c) => {
 
     // Fetch paginated
     const offset = (page - 1) * pageSize;
-    const fileRecords = await db.select()
+    const fileRecords = await getDb().select()
       .from(files)
       .where(whereClause)
       .orderBy(orderFn(sortColumn))
@@ -99,7 +99,7 @@ router.get('/', async (c) => {
     // Fetch tags for each file
     const fileIds = fileRecords.map(f => f.id);
     const allTags = fileIds.length > 0
-      ? await db.select().from(tags).where(inArray(tags.fileId, fileIds))
+      ? await getDb().select().from(tags).where(inArray(tags.fileId, fileIds))
       : [];
 
     const tagMap = new Map<string, typeof allTags>();
@@ -163,7 +163,7 @@ router.get('/search/similar/:id', async (c) => {
 router.get('/:file_id', async (c) => {
   try {
     const fileId = c.req.param('file_id');
-    const records = await db.select().from(files).where(and(eq(files.id, fileId), isNull(files.deletedAt)));
+    const records = await getDb().select().from(files).where(and(eq(files.id, fileId), isNull(files.deletedAt)));
 
     if (records.length === 0) {
       return c.json(error('NOT_FOUND', 'File not found', 404), 404);
@@ -172,7 +172,7 @@ router.get('/:file_id', async (c) => {
     const f = records[0];
 
     // Fetch tags
-    const fileTags = await db.select().from(tags).where(eq(tags.fileId, fileId));
+    const fileTags = await getDb().select().from(tags).where(eq(tags.fileId, fileId));
     const tagResult: Record<string, unknown> = {};
     for (const t of fileTags) {
       if (t.dimension === 'tool') {
@@ -187,7 +187,7 @@ router.get('/:file_id', async (c) => {
     }
 
     // Fetch deployments
-    const fileDeployments = await db.select({
+    const fileDeployments = await getDb().select({
       tool_id: deployments.toolId,
       status: deployments.status,
       deployed_at: deployments.createdAt,
@@ -257,7 +257,7 @@ router.post('/', async (c) => {
     const contentHash = computeContentHash(fileContent);
     const timestamp = now();
 
-    await db.insert(files).values({
+    await getDb().insert(files).values({
       id,
       slug,
       name,
@@ -322,12 +322,12 @@ router.post('/', async (c) => {
       }
 
       if (tagValues.length > 0) {
-        await db.insert(tags).values(tagValues);
+        await getDb().insert(tags).values(tagValues);
       }
     }
 
     // Insert initial version
-    await db.insert(fileVersions).values({
+    await getDb().insert(fileVersions).values({
       id: nanoid(12),
       fileId: id,
       version: 1,
@@ -371,7 +371,7 @@ router.put('/:file_id', async (c) => {
     };
     const { name, content: newContent, tags: inputTags } = body;
 
-    const records = await db.select().from(files).where(and(eq(files.id, fileId), isNull(files.deletedAt)));
+    const records = await getDb().select().from(files).where(and(eq(files.id, fileId), isNull(files.deletedAt)));
     if (records.length === 0) {
       return c.json(error('NOT_FOUND', 'File not found', 404), 404);
     }
@@ -387,11 +387,11 @@ router.put('/:file_id', async (c) => {
       updateData.version = (existing.version ?? 0) + 1;
     }
 
-    await db.update(files).set(updateData).where(eq(files.id, fileId));
+    await getDb().update(files).set(updateData).where(eq(files.id, fileId));
 
     // Create version record if content changed
     if (newContent) {
-      await db.insert(fileVersions).values({
+      await getDb().insert(fileVersions).values({
         id: nanoid(12),
         fileId,
         version: (existing.version ?? 0) + 1,
@@ -405,7 +405,7 @@ router.put('/:file_id', async (c) => {
     // Update tags if provided
     if (inputTags) {
       // Delete existing tags
-      await db.delete(tags).where(eq(tags.fileId, fileId));
+      await getDb().delete(tags).where(eq(tags.fileId, fileId));
 
       const tagValues: Array<{
         id: string;
@@ -454,7 +454,7 @@ router.put('/:file_id', async (c) => {
       }
 
       if (tagValues.length > 0) {
-        await db.insert(tags).values(tagValues);
+        await getDb().insert(tags).values(tagValues);
       }
     }
 
@@ -474,12 +474,12 @@ router.put('/:file_id', async (c) => {
 router.delete('/:file_id', async (c) => {
   try {
     const fileId = c.req.param('file_id');
-    const records = await db.select().from(files).where(and(eq(files.id, fileId), isNull(files.deletedAt)));
+    const records = await getDb().select().from(files).where(and(eq(files.id, fileId), isNull(files.deletedAt)));
     if (records.length === 0) {
       return c.json(error('NOT_FOUND', 'File not found', 404), 404);
     }
 
-    await db.update(files).set({ deletedAt: now() }).where(eq(files.id, fileId));
+    await getDb().update(files).set({ deletedAt: now() }).where(eq(files.id, fileId));
 
     return c.json(success({ id: fileId, deleted: true }));
   } catch (e) {
@@ -510,7 +510,7 @@ router.post('/:file_id/tags', async (c) => {
     }
 
     // Verify file exists
-    const records = await db.select().from(files).where(and(eq(files.id, fileId), isNull(files.deletedAt)));
+    const records = await getDb().select().from(files).where(and(eq(files.id, fileId), isNull(files.deletedAt)));
     if (records.length === 0) {
       return c.json(error('NOT_FOUND', 'File not found', 404), 404);
     }
@@ -519,7 +519,7 @@ router.post('/:file_id/tags', async (c) => {
     const timestamp = now();
 
     try {
-      await db.insert(tags).values({
+      await getDb().insert(tags).values({
         id,
         fileId,
         dimension,
@@ -554,7 +554,7 @@ router.delete('/:file_id/tags/:dimension/:value', async (c) => {
     const dimension = c.req.param('dimension');
     const value = c.req.param('value');
 
-    await db.delete(tags).where(
+    await getDb().delete(tags).where(
       and(eq(tags.fileId, fileId), eq(tags.dimension, dimension), eq(tags.value, value))
     );
 

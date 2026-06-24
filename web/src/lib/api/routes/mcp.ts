@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { eq, and, or, like, desc, isNull } from 'drizzle-orm';
-import { db } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { files, tags } from '@/lib/db/schema';
 import { scanEngine } from '@/lib/core/ScanEngine';
 import { deployEngine } from '@/lib/core/DeployEngine';
@@ -64,7 +64,7 @@ router.post('/execute', async (c) => {
           version: files.version,
           ...(includeContent || targetFormat ? { content: files.content } : {}),
         };
-        const fileRows = await db
+        const fileRows = await getDb()
           .select(selectFields)
           .from(files)
           .where(conditions.length > 0 ? and(...conditions) : undefined)
@@ -100,7 +100,7 @@ router.post('/execute', async (c) => {
             { success: false, error: { code: 'MISSING_PARAM', message: 'id is required' } },
             400,
           );
-        const fileRows = await db
+        const fileRows = await getDb()
           .select()
           .from(files)
           .where(and(eq(files.id, args.id as string), isNull(files.deletedAt)))
@@ -110,7 +110,7 @@ router.post('/execute', async (c) => {
             { success: false, error: { code: 'NOT_FOUND', message: `Prompt not found: ${args.id}` } },
             404,
           );
-        const tagRows = await db.select().from(tags).where(eq(tags.fileId, args.id as string));
+        const tagRows = await getDb().select().from(tags).where(eq(tags.fileId, args.id as string));
         let promptResult: Record<string, unknown> = { ...fileRows[0], tags: tagRows };
 
         // Apply format conversion if requested
@@ -161,7 +161,7 @@ router.post('/execute', async (c) => {
             },
             400,
           );
-        const fileRows = await db
+        const fileRows = await getDb()
           .select()
           .from(files)
           .where(and(eq(files.id, args.file_id as string), isNull(files.deletedAt)))

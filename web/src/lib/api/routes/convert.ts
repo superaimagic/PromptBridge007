@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { eq, and, isNull } from 'drizzle-orm';
-import { db } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { files } from '@/lib/db/schema';
 import { success, error } from '../types';
 import { formatMatrix, type PIFEntity } from '@/lib/core/FormatMatrix';
@@ -19,7 +19,7 @@ router.post('/', async (c) => {
       return c.json(error('INVALID_INPUT', 'file_id and target_format are required', 400), 400);
     }
 
-    const records = await db.select().from(files).where(and(eq(files.id, file_id), isNull(files.deletedAt)));
+    const records = await getDb().select().from(files).where(and(eq(files.id, file_id), isNull(files.deletedAt)));
     if (records.length === 0) {
       return c.json(error('NOT_FOUND', 'File not found', 404), 404);
     }

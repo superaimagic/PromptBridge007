@@ -13,7 +13,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
-import { db, ensureInitialized } from '../lib/db';
+import { getDb, ensureInitialized } from '../lib/db';
 import { files, tags } from '../lib/db/schema';
 import { toolRegistry } from '../lib/core/ToolRegistry';
 import { formatMatrix, type PIFEntity } from '../lib/core/FormatMatrix';
@@ -74,7 +74,7 @@ server.tool(
 
       let filteredFileIds: string[] | null = null;
       for (const tf of tagFilters) {
-        const matchingTags = await db
+        const matchingTags = await getDb()
           .select({ fileId: tags.fileId })
           .from(tags)
           .where(and(eq(tags.dimension, tf.dimension), eq(tags.value, tf.value)));
@@ -109,7 +109,7 @@ server.tool(
         ...(includeContent || targetFormat ? { content: files.content } : {}),
       };
 
-      const fileRows = await db
+      const fileRows = await getDb()
         .select(selectFields)
         .from(files)
         .where(and(...conditions))
@@ -160,7 +160,7 @@ server.tool(
   async (params) => {
     await ensureDbReady();
     try {
-      const fileRows = await db
+      const fileRows = await getDb()
         .select()
         .from(files)
         .where(and(eq(files.id, params.id), isNull(files.deletedAt)))
@@ -174,7 +174,7 @@ server.tool(
       }
 
       const file = fileRows[0];
-      const tagRows = await db.select().from(tags).where(eq(tags.fileId, params.id));
+      const tagRows = await getDb().select().from(tags).where(eq(tags.fileId, params.id));
 
       let result: Record<string, unknown> = { ...file, tags: tagRows };
 
@@ -261,7 +261,7 @@ server.tool(
   async (params) => {
     await ensureDbReady();
     try {
-      const fileRows = await db
+      const fileRows = await getDb()
         .select()
         .from(files)
         .where(and(eq(files.id, params.file_id), isNull(files.deletedAt)))
@@ -412,7 +412,7 @@ server.resource(
   'prompt-library://catalog',
   async (uri) => {
     await ensureDbReady();
-    const fileRows = await db
+    const fileRows = await getDb()
       .select({
         id: files.id,
         name: files.name,
@@ -469,7 +469,7 @@ server.resource(
   'prompt-library://stats',
   async (uri) => {
     await ensureDbReady();
-    const countResult = await db
+    const countResult = await getDb()
       .select({ count: sql<number>`count(*)` })
       .from(files)
       .where(isNull(files.deletedAt));

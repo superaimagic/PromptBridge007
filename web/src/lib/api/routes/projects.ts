@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { nanoid } from 'nanoid';
-import { db } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { projects, files, deployments } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { success, error, now, sanitizeInput, validateInput } from '../types';
@@ -9,7 +9,7 @@ const router = new Hono();
 
 router.get('/', async (c) => {
   try {
-    const rows = await db.select().from(projects);
+    const rows = await getDb().select().from(projects);
     return c.json(success(rows));
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Unknown error';
@@ -30,7 +30,7 @@ router.post('/', async (c) => {
     const id = nanoid(12);
     const timestamp = now();
 
-    await db.insert(projects).values({
+    await getDb().insert(projects).values({
       id,
       name: body.name,
       path: body.path,
@@ -50,7 +50,7 @@ router.post('/', async (c) => {
 router.get('/:id', async (c) => {
   try {
     const id = c.req.param('id');
-    const rows = await db.select().from(projects).where(eq(projects.id, id)).limit(1);
+    const rows = await getDb().select().from(projects).where(eq(projects.id, id)).limit(1);
     if (rows.length === 0) return c.json(error('NOT_FOUND', 'Project not found', 404), 404);
     return c.json(success(rows[0]));
   } catch (e) {
@@ -64,18 +64,18 @@ router.delete('/:id', async (c) => {
     const id = c.req.param('id');
 
     // Check for associated files
-    const relatedFiles = await db.select({ id: files.id }).from(files).where(eq(files.projectId, id)).limit(1);
+    const relatedFiles = await getDb().select({ id: files.id }).from(files).where(eq(files.projectId, id)).limit(1);
     if (relatedFiles.length > 0) {
       return c.json(error('HAS_DEPENDENCIES', 'Cannot delete project with associated files. Remove files first.', 400), 400);
     }
 
     // Check for associated deployments
-    const relatedDeployments = await db.select({ id: deployments.id }).from(deployments).where(eq(deployments.projectId, id)).limit(1);
+    const relatedDeployments = await getDb().select({ id: deployments.id }).from(deployments).where(eq(deployments.projectId, id)).limit(1);
     if (relatedDeployments.length > 0) {
       return c.json(error('HAS_DEPENDENCIES', 'Cannot delete project with associated deployments. Remove deployments first.', 400), 400);
     }
 
-    await db.delete(projects).where(eq(projects.id, id));
+    await getDb().delete(projects).where(eq(projects.id, id));
     return c.json(success({ deleted: true }));
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Unknown error';

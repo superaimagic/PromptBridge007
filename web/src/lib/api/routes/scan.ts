@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { db } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { scanHistory, deployments } from '@/lib/db/schema';
 import { eq, desc } from 'drizzle-orm';
 import { scanEngine } from '@/lib/core/ScanEngine';
@@ -21,7 +21,7 @@ router.post('/', async (c) => {
     // For incremental scan, only scan tools that have been previously detected (have deployments)
     let effectiveToolIds = toolIds;
     if (scanType === 'incremental' && !toolIds) {
-      const deploymentRows = await db.select({ toolId: deployments.toolId })
+      const deploymentRows = await getDb().select({ toolId: deployments.toolId })
         .from(deployments)
         .groupBy(deployments.toolId);
       effectiveToolIds = deploymentRows.map(r => r.toolId);
@@ -97,7 +97,7 @@ router.post('/', async (c) => {
 router.get('/:scan_id', async (c) => {
   try {
     const scanId = c.req.param('scan_id');
-    const records = await db.select().from(scanHistory).where(eq(scanHistory.id, scanId));
+    const records = await getDb().select().from(scanHistory).where(eq(scanHistory.id, scanId));
 
     if (records.length === 0) {
       return c.json(error('NOT_FOUND', 'Scan not found', 404), 404);

@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { db } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { deployments } from '@/lib/db/schema';
 import { getToolById } from './ToolRegistry';
 
@@ -35,7 +35,7 @@ export class WatchEngine {
     this.running = true;
 
     // Get all tools with deployments
-    const deploymentRows = await db
+    const deploymentRows = await getDb()
       .select({ toolId: deployments.toolId, targetPath: deployments.targetPath })
       .from(deployments);
 
