@@ -1,4 +1,4 @@
-name: Deploy to Cloudflare Pages
+name: Deploy to Cloudflare Workers
 
 on:
   push:
@@ -16,22 +16,22 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: web/package-lock.json
 
       - name: Install dependencies
         working-directory: web
-        run: npm ci --legacy-peer-deps
+        run: npm ci
 
-      - name: Build with @cloudflare/next-on-pages
+      - name: Build with @opennextjs/cloudflare
         working-directory: web
-        run: npx @cloudflare/next-on-pages
+        run: npx opennextjs-cloudflare build
 
-      - name: Deploy to Cloudflare Pages
+      - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy .vercel/output/static --project-name=promptbridge007
+          command: deploy
           workingDirectory: web

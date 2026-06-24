@@ -1,8 +1,0 @@
-name = "promptbridge007"
-compatibility_date = "2024-09-23"
-compatibility_flags = ["nodejs_compat"]
-
-[[d1_databases]]
-binding = "DB"
-database_name = "promptbridge007"
-database_id = "c962d07b-ddd9-430d-85fa-0bb6d5322ab2"

@@ -11,8 +11,8 @@ declare global {
 async function handleRequest(request: NextRequest) {
   // Try to set D1 binding if running in Cloudflare Workers
   try {
-    const { getRequestContext } = await import('@cloudflare/next-on-pages');
-    const { env } = getRequestContext();
+    const { getCloudflareContext } = await import('@opennextjs/cloudflare');
+    const { env } = await getCloudflareContext({ async: true });
     if (env?.DB) {
       const { setD1Binding } = await import('@/lib/db');
       setD1Binding(env.DB);
