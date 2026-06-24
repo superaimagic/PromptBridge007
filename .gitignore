@@ -48,5 +48,24 @@ devin*.txt
 # Cursor rules (deployed files, not source)
 .cursor/rules/
 
+# Internal docs / PRD / reports (not for open source)
+*-PRD.md
+*-分析报告.md
+*测试报告*.md
+*报名帖*.md
+REVIEW_REPORT.md
+SYSTEM_REVIEW_REPORT.md
+CodeWiki-*.md
+K12*.md
+普适性*.md
+市场调研*.md
+zh_*.md
+*-Showcase/
+.codebuddy/
+.workbuddy/
+web/AGENTS.md
+web/CLAUDE.md
+web/test-prompt-*.md
+
 # Misc
 *.bak
