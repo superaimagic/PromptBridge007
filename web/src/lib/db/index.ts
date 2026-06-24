@@ -1,74 +1,133 @@
-import { drizzle } from 'drizzle-orm/libsql';
 import { drizzle as drizzleD1 } from 'drizzle-orm/d1';
-import { createClient, type Client } from '@libsql/client';
-import * as fs from 'fs';
-import * as path from 'path';
 import * as schema from './schema';
 
-// ─── Local mode: libsql ─────────────────────────────────────────────────────
+// ─── Cloudflare D1 mode (primary) ──────────────────────────────────────────
 
-const dbPath = process.env.DATABASE_URL || 'file:./data/promptbridge007.db';
-
-function ensureDataDir(): void {
-  if (dbPath.startsWith('file:')) {
-    const filePath = dbPath.replace('file:', '');
-    if (filePath === ':memory:' || filePath.startsWith('/')) return;
-    const dir = path.dirname(filePath);
-    if (dir && dir !== '.' && !fs.existsSync(dir)) {
-      try {
-        fs.mkdirSync(dir, { recursive: true });
-      } catch {
-        // Directory may already exist (race condition)
-      }
-    }
-  }
-}
-
-let client: Client;
-
-try {
-  ensureDataDir();
-  client = createClient({
-    url: dbPath,
-  });
-} catch {
-  client = createClient({
-    url: dbPath,
-  });
-}
-
-const localDb = drizzle(client, { schema });
-
-// ─── Cloudflare D1 mode ─────────────────────────────────────────────────────
-
-// Use the local db type as the canonical type for getDb().
-// D1 and libsql drivers share the same query builder API at runtime.
-type AppDb = typeof localDb;
+type AppDb = ReturnType<typeof drizzleD1<typeof schema>>;
 
 let _d1Db: AppDb | null = null;
 
 /**
  * Set the D1 binding for Cloudflare Workers environment.
- * Called once per request in the API middleware.
+ * Called automatically by getDb() or manually in middleware.
  */
 export function setD1Binding(binding: D1Database): void {
-  _d1Db = drizzleD1(binding, { schema }) as unknown as AppDb;
+  _d1Db = drizzleD1(binding, { schema }) as AppDb;
+}
+
+// ─── Local mode: libsql (lazy) ─────────────────────────────────────────────
+
+let _localDb: AppDb | null = null;
+let _localDbInitAttempted = false;
+
+function createLocalDb(): AppDb {
+  // Use dynamic import to avoid loading @libsql/client in Cloudflare Workers
+  // These modules are only needed in local Node.js environment
+  let drizzleLibsql: typeof import('drizzle-orm/libsql').drizzle;
+  let createClient: typeof import('@libsql/client').createClient;
+
+  try {
+    const libsqlModule = require('drizzle-orm/libsql');
+    const clientModule = require('@libsql/client');
+    drizzleLibsql = libsqlModule.drizzle;
+    createClient = clientModule.createClient;
+  } catch {
+    throw new Error(
+      'Failed to initialize local database. ' +
+      'If running in Cloudflare Workers, ensure D1 binding is configured in wrangler.jsonc. ' +
+      'If running locally, ensure @libsql/client is installed.'
+    );
+  }
+
+  const fs = require('fs');
+  const path = require('path');
+  const dbPath = process.env.DATABASE_URL || 'file:./data/promptbridge007.db';
+
+  // Ensure data directory exists
+  if (dbPath.startsWith('file:')) {
+    const filePath = dbPath.replace('file:', '');
+    if (filePath !== ':memory:' && !filePath.startsWith('/')) {
+      const dir = path.dirname(filePath);
+      if (dir && dir !== '.' && !fs.existsSync(dir)) {
+        try { fs.mkdirSync(dir, { recursive: true }); } catch { /* race condition */ }
+      }
+    }
+  }
+
+  let client;
+  try {
+    client = createClient({ url: dbPath });
+  } catch {
+    client = createClient({ url: dbPath });
+  }
+
+  return drizzleLibsql(client, { schema }) as unknown as AppDb;
+}
+
+/**
+ * Try to auto-detect and set D1 binding from Cloudflare context.
+ * Returns true if D1 binding was set, false otherwise.
+ */
+function tryAutoD1Binding(): boolean {
+  if (_d1Db) return true;
+
+  try {
+    // Dynamic require - esbuild will bundle this but it only executes in Workers
+    const { getCloudflareContext } = require('@opennextjs/cloudflare');
+    const { env } = getCloudflareContext();
+    if (env?.DB) {
+      setD1Binding(env.DB);
+      return true;
+    }
+  } catch {
+    // Not in Cloudflare Workers environment
+  }
+
+  return false;
 }
 
 /**
  * Get the appropriate database instance.
- * - In Cloudflare Workers: returns D1-backed drizzle if setD1Binding was called
- * - In local development: returns libsql-backed drizzle
+ * - In Cloudflare Workers: auto-detects D1 binding from Cloudflare context
+ * - In local development: returns libsql-backed drizzle (lazy initialized)
  */
 export function getDb(): AppDb {
-  return _d1Db || localDb;
+  // Try D1 first (Cloudflare Workers)
+  if (_d1Db) return _d1Db;
+  if (tryAutoD1Binding()) return _d1Db!;
+
+  // Fall back to local libsql
+  if (!_localDb && !_localDbInitAttempted) {
+    _localDbInitAttempted = true;
+    _localDb = createLocalDb();
+  }
+
+  if (!_localDb) {
+    throw new Error(
+      'Database not available. ' +
+      'In Cloudflare Workers: ensure D1 binding is configured. ' +
+      'Locally: ensure @libsql/client is installed and DATABASE_URL is set.'
+    );
+  }
+
+  return _localDb;
 }
 
 /**
- * Default export: local db for backward compatibility.
- * Used by CLI, MCP server, and other non-HTTP contexts.
+ * Default export: Proxy that delegates to getDb() at runtime.
+ * This allows `import { db } from '@/lib/db'` to work in both
+ * Cloudflare Workers (D1) and local (libsql) environments.
  */
-export const db = localDb;
+export const db = new Proxy({} as AppDb, {
+  get(_target, prop, receiver) {
+    const actualDb = getDb();
+    const value = Reflect.get(actualDb, prop, receiver);
+    if (typeof value === 'function') {
+      return value.bind(actualDb);
+    }
+    return value;
+  },
+});
 
 // ─── Lazy initialization ────────────────────────────────────────────────────
 

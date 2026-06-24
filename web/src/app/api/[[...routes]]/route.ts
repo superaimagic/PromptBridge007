@@ -9,18 +9,7 @@ declare global {
 }
 
 async function handleRequest(request: NextRequest) {
-  // Try to set D1 binding if running in Cloudflare Workers
-  try {
-    const { getCloudflareContext } = await import('@opennextjs/cloudflare');
-    const { env } = await getCloudflareContext({ async: true });
-    if (env?.DB) {
-      const { setD1Binding } = await import('@/lib/db');
-      setD1Binding(env.DB);
-    }
-  } catch {
-    // Not in Cloudflare environment, use local db
-  }
-
+  // D1 binding is now auto-detected by getDb() via getCloudflareContext()
   return app.fetch(request);
 }
 
