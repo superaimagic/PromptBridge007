@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
-import { ensureInitialized } from '@/lib/db';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
+import { ensureInitialized, setD1Binding, getDb } from '@/lib/db';
 import { success, error } from './types';
 
 // Route modules
@@ -15,10 +16,30 @@ import mcpRoutes from './routes/mcp';
 
 const app = new Hono().basePath('/api');
 
-// ─── Middleware: Auto-initialize database on first request ──────────────────────
+// ─── Middleware: Set D1 binding + Auto-initialize database ──────────────────────
 
 app.use('*', async (_c, next) => {
-  await ensureInitialized();
+  // Set D1 binding from Cloudflare Workers context (must happen before any DB calls)
+  try {
+    const { env } = getCloudflareContext();
+    if (env?.DB) {
+      setD1Binding(env.DB as D1Database);
+    }
+  } catch {
+    // Not in Cloudflare Workers environment
+  }
+
+  // Only run ensureInitialized in local mode (D1 uses migrations)
+  try {
+    const { env } = getCloudflareContext();
+    if (!env?.DB) {
+      await ensureInitialized();
+    }
+  } catch {
+    // Local mode - ensure DB is initialized
+    await ensureInitialized();
+  }
+
   await next();
 });
 

@@ -1,7 +1,5 @@
 import { NextRequest } from 'next/server';
-import { getCloudflareContext } from '@opennextjs/cloudflare';
 import app from '@/lib/api';
-import { setD1Binding } from '@/lib/db';
 
 // Extend CloudflareEnv to include D1 binding
 declare global {
@@ -11,18 +9,8 @@ declare global {
 }
 
 async function handleRequest(request: NextRequest) {
-  // Get Cloudflare context and set D1 binding
-  try {
-    const { env, ctx } = getCloudflareContext();
-    if (env?.DB) {
-      setD1Binding(env.DB as D1Database);
-    }
-    // Pass env and ctx to Hono for proper Cloudflare Workers integration
-    return app.fetch(request, env, ctx);
-  } catch {
-    // Not in Cloudflare Workers environment, use local db
-    return app.fetch(request);
-  }
+  // D1 binding is now handled in Hono middleware via getCloudflareContext()
+  return app.fetch(request);
 }
 
 export async function GET(request: NextRequest) {
