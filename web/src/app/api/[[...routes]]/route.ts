@@ -11,17 +11,18 @@ declare global {
 }
 
 async function handleRequest(request: NextRequest) {
-  // Set D1 binding from Cloudflare Workers context
+  // Get Cloudflare context and set D1 binding
   try {
-    const { env } = getCloudflareContext();
+    const { env, ctx } = getCloudflareContext();
     if (env?.DB) {
       setD1Binding(env.DB as D1Database);
     }
+    // Pass env and ctx to Hono for proper Cloudflare Workers integration
+    return app.fetch(request, env, ctx);
   } catch {
     // Not in Cloudflare Workers environment, use local db
+    return app.fetch(request);
   }
-
-  return app.fetch(request);
 }
 
 export async function GET(request: NextRequest) {
