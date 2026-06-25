@@ -14,14 +14,35 @@ import {
   publicSources,
 } from '@/lib/db/schema';
 import { success, error, now, sanitizeInput, validateInput, generateSlug, computeContentHash } from '@/lib/api/types';
-import { scanEngine } from '@/lib/core/ScanEngine';
-import { deployEngine } from '@/lib/core/DeployEngine';
-import { syncEngine } from '@/lib/core/SyncEngine';
-import { watchEngine } from '@/lib/core/WatchEngine';
-import { publicSyncEngine } from '@/lib/core/PublicSyncEngine';
-import { searchEngine } from '@/lib/core/SearchEngine';
 import { formatMatrix, type PIFEntity } from '@/lib/core/FormatMatrix';
 import { toolRegistry } from '@/lib/core/ToolRegistry';
+
+// Lazy-load engines that depend on Node.js APIs (fs, os, child_process)
+// These cannot be imported at module level in Cloudflare Workers
+async function getScanEngine() {
+  const { scanEngine } = await import('@/lib/core/ScanEngine');
+  return scanEngine;
+}
+async function getDeployEngine() {
+  const { deployEngine } = await import('@/lib/core/DeployEngine');
+  return deployEngine;
+}
+async function getSyncEngine() {
+  const { syncEngine } = await import('@/lib/core/SyncEngine');
+  return syncEngine;
+}
+async function getWatchEngine() {
+  const { watchEngine } = await import('@/lib/core/WatchEngine');
+  return watchEngine;
+}
+async function getPublicSyncEngine() {
+  const { publicSyncEngine } = await import('@/lib/core/PublicSyncEngine');
+  return publicSyncEngine;
+}
+async function getSearchEngine() {
+  const { searchEngine } = await import('@/lib/core/SearchEngine');
+  return searchEngine;
+}
 
 // Extend CloudflareEnv to include D1 binding
 declare global {
@@ -354,7 +375,7 @@ async function handleFilesSimilarSearch(request: NextRequest, id: string): Promi
   try {
     const sp = request.nextUrl.searchParams;
     const limit = Math.min(20, Math.max(1, Number(sp.get('limit') || 5)));
-    const results = await searchEngine.suggestSimilar(id, limit);
+    const results = await (await getSearchEngine()).suggestSimilar(id, limit);
     return NextResponse.json(success(results));
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Unknown error';
@@ -681,7 +702,7 @@ async function handleFilesSearch(request: NextRequest): Promise<NextResponse> {
     } = body;
 
     // Use SearchEngine for search
-    const searchResult = await searchEngine.search({
+    const searchResult = await (await getSearchEngine()).search({
       query,
       limit: page_size,
       offset: (page - 1) * page_size,
@@ -764,7 +785,7 @@ async function handleScanCreate(request: NextRequest): Promise<NextResponse> {
     }
 
     // Use real scan engine
-    const envResult = await scanEngine.scanEnvironment(effectiveToolIds, projectId);
+    const envResult = await (await getScanEngine()).scanEnvironment(effectiveToolIds, projectId);
 
     // If tool_ids specified, return per-tool scan results
     if (toolIds && toolIds.length > 0) {
@@ -878,7 +899,7 @@ async function handleDeployCreate(request: NextRequest): Promise<NextResponse> {
     }
 
     // Use real deploy engine
-    const result = await deployEngine.deploy({
+    const result = await (await getDeployEngine()).deploy({
       fileId: file_id,
       toolId: tool_id,
       mode,
@@ -997,7 +1018,7 @@ async function handleSyncCreate(request: NextRequest): Promise<NextResponse> {
 
     // Use real sync engine
     if (sync_all) {
-      const results = await syncEngine.syncAll(direction);
+      const results = await (await getSyncEngine()).syncAll(direction);
       return NextResponse.json(success({
         direction,
         results: results.map(r => ({
@@ -1015,7 +1036,7 @@ async function handleSyncCreate(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json(error('INVALID_INPUT', 'tool_id is required when sync_all is not set', 400), { status: 400 });
     }
 
-    const result = await syncEngine.sync(tool_id, direction);
+    const result = await (await getSyncEngine()).sync(tool_id, direction);
     return NextResponse.json(success({
       direction,
       tool_id: result.toolId,
@@ -1034,7 +1055,7 @@ async function handleSyncCreate(request: NextRequest): Promise<NextResponse> {
 async function handleSyncStatuses(request: NextRequest): Promise<NextResponse> {
   await initDbForRequest();
   try {
-    const statuses = await syncEngine.getSyncStatuses();
+    const statuses = await (await getSyncEngine()).getSyncStatuses();
     return NextResponse.json(success(statuses.map(s => ({
       tool_id: s.toolId,
       tool_name: s.toolName,
@@ -1052,8 +1073,8 @@ async function handleSyncStatuses(request: NextRequest): Promise<NextResponse> {
 async function handleWatchStart(request: NextRequest): Promise<NextResponse> {
   await initDbForRequest();
   try {
-    await watchEngine.start();
-    const status = watchEngine.getStatus();
+    await (await getWatchEngine()).start();
+    const status = (await getWatchEngine()).getStatus();
     return NextResponse.json(success({
       running: status.running,
       watched_directories: status.watchedDirectories,
@@ -1068,7 +1089,7 @@ async function handleWatchStart(request: NextRequest): Promise<NextResponse> {
 async function handleWatchStop(request: NextRequest): Promise<NextResponse> {
   await initDbForRequest();
   try {
-    watchEngine.stop();
+    (await getWatchEngine()).stop();
     return NextResponse.json(success({
       running: false,
       watched_directories: 0,
@@ -1083,7 +1104,7 @@ async function handleWatchStop(request: NextRequest): Promise<NextResponse> {
 async function handleWatchStatus(request: NextRequest): Promise<NextResponse> {
   await initDbForRequest();
   try {
-    const status = watchEngine.getStatus();
+    const status = (await getWatchEngine()).getStatus();
     return NextResponse.json(success(status));
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Unknown error';
@@ -1243,7 +1264,7 @@ async function handlePublicSourceSync(request: NextRequest, sourceId: string): P
     }
 
     // Use PublicSyncEngine for real sync
-    const result = await publicSyncEngine.syncSource(sourceId);
+    const result = await (await getPublicSyncEngine()).syncSource(sourceId);
 
     return NextResponse.json(success({
       source_id: result.sourceId,
@@ -1399,7 +1420,7 @@ async function handleMcpExecute(request: NextRequest): Promise<NextResponse> {
             },
             { status: 400 },
           );
-        result = await deployEngine.deploy({
+        result = await (await getDeployEngine()).deploy({
           fileId: args.file_id as string,
           toolId: args.tool_id as string,
           mode: (args.mode as 'original' | 'customized' | 'incremental') || 'original',
@@ -1446,7 +1467,7 @@ async function handleMcpExecute(request: NextRequest): Promise<NextResponse> {
         break;
       }
       case 'scan_environment': {
-        result = await scanEngine.scanEnvironment(args.tool_ids as string[] | undefined);
+        result = await (await getScanEngine()).scanEnvironment(args.tool_ids as string[] | undefined);
         break;
       }
       case 'sync_tool': {
@@ -1458,7 +1479,7 @@ async function handleMcpExecute(request: NextRequest): Promise<NextResponse> {
             },
             { status: 400 },
           );
-        result = await syncEngine.sync(
+        result = await (await getSyncEngine()).sync(
           args.tool_id as string,
           args.direction as 'to_tool' | 'from_tool',
         );
@@ -1474,7 +1495,7 @@ async function handleMcpExecute(request: NextRequest): Promise<NextResponse> {
             { success: false, error: { code: 'MISSING_PARAM', message: 'id is required' } },
             { status: 400 },
           );
-        result = await searchEngine.suggestSimilar(
+        result = await (await getSearchEngine()).suggestSimilar(
           args.id as string,
           (args.limit as number) || 5,
         );
