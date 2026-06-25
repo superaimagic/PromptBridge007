@@ -1,6 +1,15 @@
-import * as fs from 'fs';
 import * as path from 'path';
-import * as os from 'os';
+// Lazy-load Node.js modules to avoid Workers runtime crash
+let _fs: typeof import('fs') | null = null;
+function getFs(): typeof import('fs') {
+  if (!_fs) { _fs = require('fs'); }
+  return _fs!;
+}
+let _os: typeof import('os') | null = null;
+function getOs(): typeof import('os') {
+  if (!_os) { _os = require('os'); }
+  return _os!;
+}
 import { createHash } from 'crypto';
 import { eq, and, desc } from 'drizzle-orm';
 import { getDb } from '@/lib/db';
@@ -99,8 +108,8 @@ export class SyncEngine {
         const targetPath = expandHomeDir(deployment.targetPath);
 
         // 检查文件是否在磁盘上被外部修改
-        if (fs.existsSync(targetPath)) {
-          const diskContent = fs.readFileSync(targetPath, 'utf-8');
+        if (getFs().existsSync(targetPath)) {
+          const diskContent = getFs().readFileSync(targetPath, 'utf-8');
           const diskHash = createContentHash(diskContent);
 
           // 如果磁盘内容与部署内容不同，说明被外部修改了
@@ -109,7 +118,7 @@ export class SyncEngine {
             conflicts.push({
               filePath: targetPath,
               dbModified: deployment.updatedAt,
-              fsModified: fs.statSync(targetPath).mtime.toISOString(),
+              fsModified: getFs().statSync(targetPath).mtime.toISOString(),
             });
             continue; // 跳过冲突文件
           }
@@ -117,10 +126,10 @@ export class SyncEngine {
 
         // 将部署内容写入磁盘
         const dir = path.dirname(targetPath);
-        if (!fs.existsSync(dir)) {
-          fs.mkdirSync(dir, { recursive: true });
+        if (!getFs().existsSync(dir)) {
+          getFs().mkdirSync(dir, { recursive: true });
         }
-        fs.writeFileSync(targetPath, deployment.deployedContent ?? '', 'utf-8');
+        getFs().writeFileSync(targetPath, deployment.deployedContent ?? '', 'utf-8');
         filesSynced++;
       } catch (err) {
         errors.push(`Failed to sync ${deployment.targetPath}: ${err instanceof Error ? err.message : String(err)}`);
@@ -156,12 +165,12 @@ export class SyncEngine {
       try {
         const targetPath = expandHomeDir(deployment.targetPath);
 
-        if (!fs.existsSync(targetPath)) {
+        if (!getFs().existsSync(targetPath)) {
           errors.push(`File not found on disk: ${targetPath}`);
           continue;
         }
 
-        const diskContent = fs.readFileSync(targetPath, 'utf-8');
+        const diskContent = getFs().readFileSync(targetPath, 'utf-8');
 
         // 如果内容相同，跳过
         if (diskContent === deployment.deployedContent) continue;
@@ -195,7 +204,7 @@ export class SyncEngine {
           conflicts.push({
             filePath: targetPath,
             dbModified: file.updatedAt,
-            fsModified: fs.statSync(targetPath).mtime.toISOString(),
+            fsModified: getFs().statSync(targetPath).mtime.toISOString(),
           });
           continue;
         }
@@ -264,9 +273,9 @@ export class SyncEngine {
 
       for (const deployment of deploymentRows) {
         const targetPath = expandHomeDir(deployment.targetPath);
-        if (fs.existsSync(targetPath)) {
+        if (getFs().existsSync(targetPath)) {
           try {
-            const diskContent = fs.readFileSync(targetPath, 'utf-8');
+            const diskContent = getFs().readFileSync(targetPath, 'utf-8');
             if (diskContent !== deployment.deployedContent) {
               pendingChanges++;
             }
@@ -299,7 +308,7 @@ export class SyncEngine {
 
 function expandHomeDir(filePath: string): string {
   if (filePath.startsWith('~/')) {
-    return path.join(os.homedir(), filePath.slice(2));
+    return path.join(getOs().homedir(), filePath.slice(2));
   }
   return filePath;
 }

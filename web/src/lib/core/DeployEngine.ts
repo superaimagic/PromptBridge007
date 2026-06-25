@@ -1,6 +1,15 @@
-import * as fs from 'fs';
 import * as path from 'path';
-import * as os from 'os';
+// Lazy-load Node.js modules to avoid Workers runtime crash
+let _fs: typeof import('fs') | null = null;
+function getFs(): typeof import('fs') {
+  if (!_fs) { _fs = require('fs'); }
+  return _fs!;
+}
+let _os: typeof import('os') | null = null;
+function getOs(): typeof import('os') {
+  if (!_os) { _os = require('os'); }
+  return _os!;
+}
 import { eq, and, desc } from 'drizzle-orm';
 import { getDb } from '@/lib/db';
 import { deployments, files } from '@/lib/db/schema';
@@ -165,10 +174,10 @@ export class DeployEngine {
     try {
       const expandedTarget = expandHomeDir(targetPath);
       const dir = path.dirname(expandedTarget);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
+      if (!getFs().existsSync(dir)) {
+        getFs().mkdirSync(dir, { recursive: true });
       }
-      fs.writeFileSync(expandedTarget, deployedContent, 'utf-8');
+      getFs().writeFileSync(expandedTarget, deployedContent, 'utf-8');
     } catch (err) {
       status = 'failed';
       errorMessage = err instanceof Error ? err.message : String(err);
@@ -300,8 +309,8 @@ export class DeployEngine {
     // 尝试删除已部署的文件
     try {
       const expandedPath = expandHomeDir(deployment.targetPath);
-      if (fs.existsSync(expandedPath)) {
-        fs.unlinkSync(expandedPath);
+      if (getFs().existsSync(expandedPath)) {
+        getFs().unlinkSync(expandedPath);
       }
     } catch {
       // 忽略文件删除错误
@@ -358,7 +367,7 @@ function sanitizeSlug(slug: string): string {
 
 function expandHomeDir(filePath: string): string {
   if (filePath.startsWith('~/')) {
-    return path.join(os.homedir(), filePath.slice(2));
+    return path.join(getOs().homedir(), filePath.slice(2));
   }
   return filePath;
 }

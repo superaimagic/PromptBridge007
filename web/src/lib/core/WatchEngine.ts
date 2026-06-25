@@ -1,13 +1,22 @@
-import * as fs from 'fs';
 import * as path from 'path';
-import * as os from 'os';
+// Lazy-load Node.js modules to avoid Workers runtime crash
+let _fs: typeof import('fs') | null = null;
+function getFs(): typeof import('fs') {
+  if (!_fs) { _fs = require('fs'); }
+  return _fs!;
+}
+let _os: typeof import('os') | null = null;
+function getOs(): typeof import('os') {
+  if (!_os) { _os = require('os'); }
+  return _os!;
+}
 import { getDb } from '@/lib/db';
 import { deployments } from '@/lib/db/schema';
 import { getToolById } from './ToolRegistry';
 
 function expandHomeDir(filePath: string): string {
   if (filePath.startsWith('~/')) {
-    return path.join(os.homedir(), filePath.slice(2));
+    return path.join(getOs().homedir(), filePath.slice(2));
   }
   return filePath;
 }
@@ -45,7 +54,7 @@ export class WatchEngine {
 
       // Watch the target directory
       const targetDir = path.dirname(expandHomeDir(row.targetPath));
-      if (fs.existsSync(targetDir)) {
+      if (getFs().existsSync(targetDir)) {
         this.watchDirectory(row.toolId, targetDir);
       }
     }
@@ -103,15 +112,15 @@ export class WatchEngine {
 
   private async pollDirectory(toolId: string, dirPath: string): Promise<void> {
     try {
-      const entries = fs.readdirSync(dirPath);
+      const entries = getFs().readdirSync(dirPath);
       const currentHashes = new Map<string, string>();
 
       for (const entry of entries) {
         const fullPath = path.join(dirPath, entry);
         try {
-          const stat = fs.statSync(fullPath);
+          const stat = getFs().statSync(fullPath);
           if (stat.isFile()) {
-            const content = fs.readFileSync(fullPath, 'utf-8');
+            const content = getFs().readFileSync(fullPath, 'utf-8');
             const hash = this.simpleHash(content);
             currentHashes.set(fullPath, hash);
 

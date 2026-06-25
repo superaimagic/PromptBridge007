@@ -1,7 +1,20 @@
-import * as fs from 'fs';
 import * as path from 'path';
-import * as os from 'os';
-import { execSync } from 'child_process';
+// Lazy-load Node.js modules to avoid Workers runtime crash
+let _fs: typeof import('fs') | null = null;
+function getFs(): typeof import('fs') {
+  if (!_fs) { _fs = require('fs'); }
+  return _fs!;
+}
+let _os: typeof import('os') | null = null;
+function getOs(): typeof import('os') {
+  if (!_os) { _os = require('os'); }
+  return _os!;
+}
+let _childProcess: typeof import('child_process') | null = null;
+function getChildProcess(): typeof import('child_process') {
+  if (!_childProcess) { _childProcess = require('child_process'); }
+  return _childProcess!;
+}
 import { createHash } from 'crypto';
 import { nanoid } from 'nanoid';
 import { eq, and } from 'drizzle-orm';
@@ -24,9 +37,9 @@ export class PublicSyncEngine {
   private cacheDir: string;
 
   constructor() {
-    this.cacheDir = path.join(os.homedir(), '.promptbridge007', 'cache');
-    if (!fs.existsSync(this.cacheDir)) {
-      fs.mkdirSync(this.cacheDir, { recursive: true });
+    this.cacheDir = path.join(getOs().homedir(), '.promptbridge007', 'cache');
+    if (!getFs().existsSync(this.cacheDir)) {
+      getFs().mkdirSync(this.cacheDir, { recursive: true });
     }
   }
 
@@ -72,20 +85,20 @@ export class PublicSyncEngine {
 
     try {
       // Clone or pull
-      if (fs.existsSync(path.join(localPath, '.git'))) {
+      if (getFs().existsSync(path.join(localPath, '.git'))) {
         // Pull latest
-        execSync('git pull --ff-only', { cwd: localPath, timeout: 30000, windowsHide: true });
+        getChildProcess().execSync('git pull --ff-only', { cwd: localPath, timeout: 30000, windowsHide: true });
       } else {
         // Clean and clone
-        if (fs.existsSync(localPath)) {
-          fs.rmSync(localPath, { recursive: true, force: true });
+        if (getFs().existsSync(localPath)) {
+          getFs().rmSync(localPath, { recursive: true, force: true });
         }
-        fs.mkdirSync(localPath, { recursive: true });
-        execSync(`git clone --depth 1 ${source.repoUrl} .`, { cwd: localPath, timeout: 60000, windowsHide: true });
+        getFs().mkdirSync(localPath, { recursive: true });
+        getChildProcess().execSync(`git clone --depth 1 ${source.repoUrl} .`, { cwd: localPath, timeout: 60000, windowsHide: true });
       }
 
       // Get current commit hash
-      const currentHash = execSync('git rev-parse HEAD', { cwd: localPath, encoding: 'utf-8', windowsHide: true }).trim();
+      const currentHash = getChildProcess().execSync('git rev-parse HEAD', { cwd: localPath, encoding: 'utf-8', windowsHide: true }).trim();
 
       // Check if already synced this commit
       if (currentHash === source.lastCommitHash) {
@@ -149,7 +162,7 @@ export class PublicSyncEngine {
     const extensions = ['.md', '.mdc', '.yaml', '.yml', '.toml', '.json', '.txt'];
 
     try {
-      const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+      const entries = getFs().readdirSync(dirPath, { withFileTypes: true });
       for (const entry of entries) {
         // Skip hidden dirs, node_modules, .git
         if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
@@ -160,7 +173,7 @@ export class PublicSyncEngine {
         } else if (extensions.some(ext => entry.name.endsWith(ext))) {
           // Skip very large files (>500KB)
           try {
-            const stat = fs.statSync(fullPath);
+            const stat = getFs().statSync(fullPath);
             if (stat.size <= 512 * 1024) {
               results.push(fullPath);
             }
@@ -180,7 +193,7 @@ export class PublicSyncEngine {
     source: typeof publicSources.$inferSelect,
     localPath: string,
   ): Promise<'imported' | 'updated' | 'skipped'> {
-    const content = fs.readFileSync(filePath, 'utf-8');
+    const content = getFs().readFileSync(filePath, 'utf-8');
     const fileName = path.basename(filePath, path.extname(filePath));
 
     // Build a descriptive name from the file path (e.g., "ANTHROPIC/CLAUDE-FABLE-5")

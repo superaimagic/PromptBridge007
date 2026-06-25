@@ -1,8 +1,21 @@
-import * as fs from 'fs';
 import * as path from 'path';
-import * as os from 'os';
 import { createHash } from 'crypto';
-import { execSync } from 'child_process';
+// Lazy-load Node.js modules to avoid Workers runtime crash
+let _fs: typeof import('fs') | null = null;
+function getFs(): typeof import('fs') {
+  if (!_fs) { _fs = require('fs'); }
+  return _fs!;
+}
+let _os: typeof import('os') | null = null;
+function getOs(): typeof import('os') {
+  if (!_os) { _os = require('os'); }
+  return _os!;
+}
+let _childProcess: typeof import('child_process') | null = null;
+function getChildProcess(): typeof import('child_process') {
+  if (!_childProcess) { _childProcess = require('child_process'); }
+  return _childProcess!;
+}
 import { eq, and } from 'drizzle-orm';
 import { getDb } from '@/lib/db';
 import { files, fileVersions, tags, scanHistory, scanSources } from '@/lib/db/schema';
@@ -217,7 +230,7 @@ export class ScanEngine {
    * 导入单个文件到数据库
    */
   private async importFile(filePath: string, tool: ToolDefinition, projectId?: string): Promise<'imported' | 'updated' | 'skipped'> {
-    const content = fs.readFileSync(filePath, 'utf-8');
+    const content = getFs().readFileSync(filePath, 'utf-8');
     const fileName = path.basename(filePath, path.extname(filePath));
     const slug = slugify(fileName) + '-' + generateId(6);
 
@@ -376,7 +389,7 @@ function resolvePromptPath(promptPath: string): string {
   let resolved = promptPath.replace(/\/$/, '');
 
   if (resolved.startsWith('~/')) {
-    resolved = path.join(os.homedir(), resolved.slice(2));
+    resolved = path.join(getOs().homedir(), resolved.slice(2));
   } else if (resolved.startsWith('./')) {
     resolved = path.join(projectDir, resolved.slice(2));
   }
@@ -388,14 +401,14 @@ function resolvePromptPath(promptPath: string): string {
 
 function expandHomeDir(filePath: string): string {
   if (filePath.startsWith('~/')) {
-    return path.join(os.homedir(), filePath.slice(2));
+    return path.join(getOs().homedir(), filePath.slice(2));
   }
   return filePath;
 }
 
 function isDirectory(dirPath: string): boolean {
   try {
-    return fs.existsSync(dirPath) && fs.statSync(dirPath).isDirectory();
+    return getFs().existsSync(dirPath) && getFs().statSync(dirPath).isDirectory();
   } catch {
     return false;
   }
@@ -403,7 +416,7 @@ function isDirectory(dirPath: string): boolean {
 
 function isFile(filePath: string): boolean {
   try {
-    return fs.existsSync(filePath) && fs.statSync(filePath).isFile();
+    return getFs().existsSync(filePath) && getFs().statSync(filePath).isFile();
   } catch {
     return false;
   }
@@ -415,7 +428,7 @@ function findExecutable(name: string): string | null {
     return null;
   }
   try {
-    const result = execSync(`where ${name} 2>nul`, {
+    const result = getChildProcess().execSync(`where ${name} 2>nul`, {
       encoding: 'utf-8',
       timeout: 5000,
       windowsHide: true,
@@ -430,7 +443,7 @@ function findExecutable(name: string): string | null {
 async function scanDirectory(dirPath: string, extension: string): Promise<string[]> {
   const results: string[] = [];
   try {
-    const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+    const entries = getFs().readdirSync(dirPath, { withFileTypes: true });
     for (const entry of entries) {
       const fullPath = path.join(dirPath, entry.name);
       if (entry.isDirectory()) {
@@ -447,8 +460,8 @@ async function scanDirectory(dirPath: string, extension: string): Promise<string
 }
 
 function getCommonInstallDirs(): string[] {
-  const home = os.homedir();
-  const platform = os.platform();
+  const home = getOs().homedir();
+  const platform = getOs().platform();
   const dirs: string[] = [];
 
   if (platform === 'darwin') {
