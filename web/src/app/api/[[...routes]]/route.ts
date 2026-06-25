@@ -1,5 +1,7 @@
 import { NextRequest } from 'next/server';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 import app from '@/lib/api';
+import { setD1Binding } from '@/lib/db';
 
 // Extend CloudflareEnv to include D1 binding
 declare global {
@@ -9,7 +11,16 @@ declare global {
 }
 
 async function handleRequest(request: NextRequest) {
-  // D1 binding is now auto-detected by getDb() via getCloudflareContext()
+  // Set D1 binding from Cloudflare Workers context
+  try {
+    const { env } = getCloudflareContext();
+    if (env?.DB) {
+      setD1Binding(env.DB as D1Database);
+    }
+  } catch {
+    // Not in Cloudflare Workers environment, use local db
+  }
+
   return app.fetch(request);
 }
 

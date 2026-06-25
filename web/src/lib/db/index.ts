@@ -1,5 +1,4 @@
 import { drizzle as drizzleD1 } from 'drizzle-orm/d1';
-import { getCloudflareContext } from '@opennextjs/cloudflare';
 import * as schema from './schema';
 
 // ─── Cloudflare D1 mode (primary) ──────────────────────────────────────────
@@ -10,7 +9,7 @@ let _d1Db: AppDb | null = null;
 
 /**
  * Set the D1 binding for Cloudflare Workers environment.
- * Called automatically by getDb() or manually in middleware.
+ * Called from API route middleware via getCloudflareContext().
  */
 export function setD1Binding(binding: D1Database): void {
   _d1Db = drizzleD1(binding, { schema }) as AppDb;
@@ -22,8 +21,6 @@ let _localDb: AppDb | null = null;
 let _localDbInitAttempted = false;
 
 function createLocalDb(): AppDb {
-  // These modules are only needed in local Node.js environment
-  // Using require() so esbuild can bundle them but they only execute locally
   const { drizzle: drizzleLibsql } = require('drizzle-orm/libsql');
   const { createClient } = require('@libsql/client');
   const fs = require('fs');
@@ -31,7 +28,6 @@ function createLocalDb(): AppDb {
 
   const dbPath = process.env.DATABASE_URL || 'file:./data/promptbridge007.db';
 
-  // Ensure data directory exists
   if (dbPath.startsWith('file:')) {
     const filePath = dbPath.replace('file:', '');
     if (filePath !== ':memory:' && !filePath.startsWith('/')) {
@@ -53,34 +49,13 @@ function createLocalDb(): AppDb {
 }
 
 /**
- * Try to auto-detect and set D1 binding from Cloudflare context.
- * Returns true if D1 binding was set, false otherwise.
- */
-function tryAutoD1Binding(): boolean {
-  if (_d1Db) return true;
-
-  try {
-    const { env } = getCloudflareContext();
-    if (env?.DB) {
-      setD1Binding(env.DB as D1Database);
-      return true;
-    }
-  } catch {
-    // Not in Cloudflare Workers environment or DB binding not available
-  }
-
-  return false;
-}
-
-/**
  * Get the appropriate database instance.
- * - In Cloudflare Workers: auto-detects D1 binding from Cloudflare context
+ * - In Cloudflare Workers: returns D1-backed drizzle if setD1Binding was called
  * - In local development: returns libsql-backed drizzle (lazy initialized)
  */
 export function getDb(): AppDb {
-  // Try D1 first (Cloudflare Workers)
+  // D1 takes priority (set by API route middleware in Workers)
   if (_d1Db) return _d1Db;
-  if (tryAutoD1Binding()) return _d1Db!;
 
   // Fall back to local libsql
   if (!_localDb && !_localDbInitAttempted) {
@@ -101,8 +76,6 @@ export function getDb(): AppDb {
 
 /**
  * Default export: Proxy that delegates to getDb() at runtime.
- * This allows `import { db } from '@/lib/db'` to work in both
- * Cloudflare Workers (D1) and local (libsql) environments.
  */
 export const db = new Proxy({} as AppDb, {
   get(_target, prop, receiver) {
@@ -122,7 +95,6 @@ let _initPromise: Promise<void> | null = null;
 
 /**
  * Ensure the database is initialized (tables created + seeded).
- * Safe to call multiple times - only runs once.
  * Only works in local mode (libsql). D1 uses migrations.
  */
 export async function ensureInitialized(): Promise<void> {
@@ -139,7 +111,7 @@ export async function ensureInitialized(): Promise<void> {
       _initialized = true;
     } catch (error) {
       console.error('Database initialization failed:', error);
-      _initPromise = null; // Allow retry
+      _initPromise = null;
       throw error;
     }
   })();
