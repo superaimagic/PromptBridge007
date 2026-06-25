@@ -1,4 +1,5 @@
 import { drizzle as drizzleD1 } from 'drizzle-orm/d1';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 import * as schema from './schema';
 
 // ─── Cloudflare D1 mode (primary) ──────────────────────────────────────────
@@ -21,26 +22,13 @@ let _localDb: AppDb | null = null;
 let _localDbInitAttempted = false;
 
 function createLocalDb(): AppDb {
-  // Use dynamic import to avoid loading @libsql/client in Cloudflare Workers
   // These modules are only needed in local Node.js environment
-  let drizzleLibsql: typeof import('drizzle-orm/libsql').drizzle;
-  let createClient: typeof import('@libsql/client').createClient;
-
-  try {
-    const libsqlModule = require('drizzle-orm/libsql');
-    const clientModule = require('@libsql/client');
-    drizzleLibsql = libsqlModule.drizzle;
-    createClient = clientModule.createClient;
-  } catch {
-    throw new Error(
-      'Failed to initialize local database. ' +
-      'If running in Cloudflare Workers, ensure D1 binding is configured in wrangler.jsonc. ' +
-      'If running locally, ensure @libsql/client is installed.'
-    );
-  }
-
+  // Using require() so esbuild can bundle them but they only execute locally
+  const { drizzle: drizzleLibsql } = require('drizzle-orm/libsql');
+  const { createClient } = require('@libsql/client');
   const fs = require('fs');
   const path = require('path');
+
   const dbPath = process.env.DATABASE_URL || 'file:./data/promptbridge007.db';
 
   // Ensure data directory exists
@@ -72,15 +60,13 @@ function tryAutoD1Binding(): boolean {
   if (_d1Db) return true;
 
   try {
-    // Dynamic require - esbuild will bundle this but it only executes in Workers
-    const { getCloudflareContext } = require('@opennextjs/cloudflare');
     const { env } = getCloudflareContext();
     if (env?.DB) {
-      setD1Binding(env.DB);
+      setD1Binding(env.DB as D1Database);
       return true;
     }
   } catch {
-    // Not in Cloudflare Workers environment
+    // Not in Cloudflare Workers environment or DB binding not available
   }
 
   return false;
