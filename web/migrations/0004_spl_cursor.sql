@@ -1,10 +1,10 @@
 -- Migration: 0004_spl_cursor
 -- PromptBridge007: system_prompts_leaks import – Cursor
--- Generated: 2026-06-25T07:28:12.833Z
+-- Generated: 2026-06-26T01:55:25.329Z
 -- File count: 1
 
 -- Cursor
-INSERT OR IGNORE INTO files (id, slug, name, content, content_hash, format, project_id, source_type, repo_name, repo_url, repo_license, author, author_url, file_path, commit_hash, fetched_at, license, license_url, version, install_count, rating, created_at, updated_at, deleted_at) VALUES ('spl-94f54e30', 'cursor/cursor', '[Cursor] Cursor', 'You are an AI coding assistant, powered by {model_name}.  
+INSERT OR IGNORE INTO files (id, slug, name, content, content_hash, format, project_id, source_type, repo_name, repo_url, repo_license, author, author_url, file_path, commit_hash, fetched_at, license, license_url, version, install_count, rating, created_at, updated_at, deleted_at) VALUES ('spl-8871504e', 'cursor/cursor', '[Cursor] Cursor', 'You are an AI coding assistant, powered by {model_name}.  
 
 You operate in Cursor.  
 
@@ -326,14 +326,14 @@ When users ask to perform tasks, check if any available skills can help. Skills 
 
 ## Agent Transcripts  
 Agent transcripts (past chats) are stored as JSONL files and can be referenced by UUID.  
-', 'cee6d8920a0427cf7e90977def4520f4b97cf354ae672ca41b2c00c3eb7c20b5', 'markdown', 'default-project', 'public', 'system_prompts_leaks', 'https://github.com/asgeirtj/system_prompts_leaks/blob/main/Cursor/cursor.md', 'MIT', NULL, NULL, 'Cursor/cursor.md', 'latest', datetime('now'), 'MIT', 'https://opensource.org/licenses/MIT', 1, 0, 0, datetime('now'), datetime('now'), NULL);
-INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-dbb3d74b', 'spl-94f54e30', 'tool', 'cursor', 0.95, datetime('now'));
-INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-94ab349b', 'spl-94f54e30', 'role', 'system-prompt', 0.9, datetime('now'));
-INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-c4eaef56', 'spl-94f54e30', 'domain', 'ai-assistant', 0.85, datetime('now'));
-INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-dd453e42', 'spl-94f54e30', 'language', 'en', 0.95, datetime('now'));
-INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-d42a5ad1', 'spl-94f54e30', 'quality', 'detailed', 0.8, datetime('now'));
-INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-dc0d2927', 'spl-94f54e30', 'source_type', 'leaked-system-prompt', 0.95, datetime('now'));
-INSERT INTO file_versions (id, file_id, version, content, content_hash, change_summary, created_at) VALUES ('spl-58c6af9d', 'spl-94f54e30', 1, 'You are an AI coding assistant, powered by {model_name}.  
+', 'cee6d8920a0427cf7e90977def4520f4b97cf354ae672ca41b2c00c3eb7c20b5', 'markdown', 'default-project', 'public', 'system_prompts_leaks', 'https://github.com/asgeirtj/system_prompts_leaks/blob/main/Cursor/cursor.md', 'CC0-1.0', NULL, NULL, 'Cursor/cursor.md', 'latest', datetime('now'), 'CC0-1.0', 'https://creativecommons.org/publicdomain/zero/1.0/', 1, 0, 0, datetime('now'), datetime('now'), NULL);
+INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-1cab8fca', 'spl-8871504e', 'tool', 'cursor', 0.95, datetime('now'));
+INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-615a6058', 'spl-8871504e', 'role', 'system-prompt', 0.9, datetime('now'));
+INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-c9ad8b11', 'spl-8871504e', 'domain', 'ai-assistant', 0.85, datetime('now'));
+INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-4cdba90e', 'spl-8871504e', 'language', 'en', 0.95, datetime('now'));
+INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-84ab5914', 'spl-8871504e', 'quality', 'detailed', 0.8, datetime('now'));
+INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-86fa9e51', 'spl-8871504e', 'source_type', 'leaked-system-prompt', 0.95, datetime('now'));
+INSERT INTO file_versions (id, file_id, version, content, content_hash, change_summary, created_at) VALUES ('spl-5acb5d89', 'spl-8871504e', 1, 'You are an AI coding assistant, powered by {model_name}.  
 
 You operate in Cursor.  
 

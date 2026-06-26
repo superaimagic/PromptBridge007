@@ -1,10 +1,10 @@
 -- Migration: 0004_spl_qwen
 -- PromptBridge007: system_prompts_leaks import – Qwen
--- Generated: 2026-06-25T07:28:12.833Z
+-- Generated: 2026-06-26T01:55:25.310Z
 -- File count: 1
 
 -- Qwen 3.6 Plus
-INSERT OR IGNORE INTO files (id, slug, name, content, content_hash, format, project_id, source_type, repo_name, repo_url, repo_license, author, author_url, file_path, commit_hash, fetched_at, license, license_url, version, install_count, rating, created_at, updated_at, deleted_at) VALUES ('spl-d36f90d7', 'qwen/qwen-3-6-plus', '[Qwen] Qwen 3.6 Plus', 'Please remember the current actual time: Friday, April 03, 2026  
+INSERT OR IGNORE INTO files (id, slug, name, content, content_hash, format, project_id, source_type, repo_name, repo_url, repo_license, author, author_url, file_path, commit_hash, fetched_at, license, license_url, version, install_count, rating, created_at, updated_at, deleted_at) VALUES ('spl-ab411b37', 'qwen/qwen-3-6-plus', '[Qwen] Qwen 3.6 Plus', 'Please remember the current actual time: Friday, April 03, 2026  
 Your knowledge cutoff date is 2026.
 
 ```json
@@ -236,15 +236,15 @@ Your knowledge cutoff date is 2026.
   }
 }
 ```
-', 'df6c1d14c89898a0dd92927cb075437bb02bc96a8e58d4f4e4efa07ccf8f7758', 'markdown', 'default-project', 'public', 'system_prompts_leaks', 'https://github.com/asgeirtj/system_prompts_leaks/blob/main/Qwen/qwen-3.6-plus.md', 'MIT', NULL, NULL, 'Qwen/qwen-3.6-plus.md', 'latest', datetime('now'), 'MIT', 'https://opensource.org/licenses/MIT', 1, 0, 0, datetime('now'), datetime('now'), NULL);
-INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-d1cdb0a9', 'spl-d36f90d7', 'tool', 'qwen', 0.95, datetime('now'));
-INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-a824bdc1', 'spl-d36f90d7', 'role', 'system-prompt', 0.9, datetime('now'));
-INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-b0b97d32', 'spl-d36f90d7', 'domain', 'ai-assistant', 0.85, datetime('now'));
-INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-23d86c54', 'spl-d36f90d7', 'language', 'en', 0.95, datetime('now'));
-INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-7e6f508e', 'spl-d36f90d7', 'quality', 'standard', 0.8, datetime('now'));
-INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-795efcd6', 'spl-d36f90d7', 'source_type', 'leaked-system-prompt', 0.95, datetime('now'));
-INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-8e9253df', 'spl-d36f90d7', 'version', '3.6', 0.9, datetime('now'));
-INSERT INTO file_versions (id, file_id, version, content, content_hash, change_summary, created_at) VALUES ('spl-459971aa', 'spl-d36f90d7', 1, 'Please remember the current actual time: Friday, April 03, 2026  
+', 'df6c1d14c89898a0dd92927cb075437bb02bc96a8e58d4f4e4efa07ccf8f7758', 'markdown', 'default-project', 'public', 'system_prompts_leaks', 'https://github.com/asgeirtj/system_prompts_leaks/blob/main/Qwen/qwen-3.6-plus.md', 'CC0-1.0', NULL, NULL, 'Qwen/qwen-3.6-plus.md', 'latest', datetime('now'), 'CC0-1.0', 'https://creativecommons.org/publicdomain/zero/1.0/', 1, 0, 0, datetime('now'), datetime('now'), NULL);
+INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-fec3bed7', 'spl-ab411b37', 'tool', 'qwen', 0.95, datetime('now'));
+INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-8349d7c6', 'spl-ab411b37', 'role', 'system-prompt', 0.9, datetime('now'));
+INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-593d86cc', 'spl-ab411b37', 'domain', 'ai-assistant', 0.85, datetime('now'));
+INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-8a828014', 'spl-ab411b37', 'language', 'en', 0.95, datetime('now'));
+INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-789d13ed', 'spl-ab411b37', 'quality', 'standard', 0.8, datetime('now'));
+INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-87cfd014', 'spl-ab411b37', 'source_type', 'leaked-system-prompt', 0.95, datetime('now'));
+INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-47772c85', 'spl-ab411b37', 'version', '3.6', 0.9, datetime('now'));
+INSERT INTO file_versions (id, file_id, version, content, content_hash, change_summary, created_at) VALUES ('spl-c5618b90', 'spl-ab411b37', 1, 'Please remember the current actual time: Friday, April 03, 2026  
 Your knowledge cutoff date is 2026.
 
 ```json

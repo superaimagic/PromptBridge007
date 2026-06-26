@@ -1,10 +1,10 @@
 -- Migration: 0004_spl_notion
 -- PromptBridge007: system_prompts_leaks import – Notion
--- Generated: 2026-06-25T07:28:12.832Z
+-- Generated: 2026-06-26T01:55:25.302Z
 -- File count: 1
 
 -- Notion Ai
-INSERT OR IGNORE INTO files (id, slug, name, content, content_hash, format, project_id, source_type, repo_name, repo_url, repo_license, author, author_url, file_path, commit_hash, fetched_at, license, license_url, version, install_count, rating, created_at, updated_at, deleted_at) VALUES ('spl-188ef1ac', 'notion/notion-ai', '[Notion] Notion Ai', '# AI
+INSERT OR IGNORE INTO files (id, slug, name, content, content_hash, format, project_id, source_type, repo_name, repo_url, repo_license, author, author_url, file_path, commit_hash, fetched_at, license, license_url, version, install_count, rating, created_at, updated_at, deleted_at) VALUES ('spl-d255508e', 'notion/notion-ai', '[Notion] Notion Ai', '# AI
 
 You are Notion AI, an AI assistant inside of Notion.
 
@@ -1041,14 +1041,14 @@ Unknown (a block type that is not supported in the API yet):
 <unknown url="{{URL}}" alt="Alt"/>
 
 </advanced-blocks>
-', '2701527acf3ff1af356e9982983283a42bddce8f88afa7d3562b77931c73b793', 'markdown', 'default-project', 'public', 'system_prompts_leaks', 'https://github.com/asgeirtj/system_prompts_leaks/blob/main/Notion/notion-ai.md', 'MIT', NULL, NULL, 'Notion/notion-ai.md', 'latest', datetime('now'), 'MIT', 'https://opensource.org/licenses/MIT', 1, 0, 0, datetime('now'), datetime('now'), NULL);
-INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-8cbaa442', 'spl-188ef1ac', 'tool', 'notion-ai', 0.95, datetime('now'));
-INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-c2b517dd', 'spl-188ef1ac', 'role', 'system-prompt', 0.9, datetime('now'));
-INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-f55f9aba', 'spl-188ef1ac', 'domain', 'ai-assistant', 0.85, datetime('now'));
-INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-00f95d1d', 'spl-188ef1ac', 'language', 'en', 0.95, datetime('now'));
-INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-2459fa24', 'spl-188ef1ac', 'quality', 'detailed', 0.8, datetime('now'));
-INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-25b5319b', 'spl-188ef1ac', 'source_type', 'leaked-system-prompt', 0.95, datetime('now'));
-INSERT INTO file_versions (id, file_id, version, content, content_hash, change_summary, created_at) VALUES ('spl-c7906a40', 'spl-188ef1ac', 1, '# AI
+', '2701527acf3ff1af356e9982983283a42bddce8f88afa7d3562b77931c73b793', 'markdown', 'default-project', 'public', 'system_prompts_leaks', 'https://github.com/asgeirtj/system_prompts_leaks/blob/main/Notion/notion-ai.md', 'CC0-1.0', NULL, NULL, 'Notion/notion-ai.md', 'latest', datetime('now'), 'CC0-1.0', 'https://creativecommons.org/publicdomain/zero/1.0/', 1, 0, 0, datetime('now'), datetime('now'), NULL);
+INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-ba688a74', 'spl-d255508e', 'tool', 'notion-ai', 0.95, datetime('now'));
+INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-abd9e198', 'spl-d255508e', 'role', 'system-prompt', 0.9, datetime('now'));
+INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-9d1715dc', 'spl-d255508e', 'domain', 'ai-assistant', 0.85, datetime('now'));
+INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-34d28e50', 'spl-d255508e', 'language', 'en', 0.95, datetime('now'));
+INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-36a63604', 'spl-d255508e', 'quality', 'detailed', 0.8, datetime('now'));
+INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-1f3594e5', 'spl-d255508e', 'source_type', 'leaked-system-prompt', 0.95, datetime('now'));
+INSERT INTO file_versions (id, file_id, version, content, content_hash, change_summary, created_at) VALUES ('spl-531da850', 'spl-d255508e', 1, '# AI
 
 You are Notion AI, an AI assistant inside of Notion.
 

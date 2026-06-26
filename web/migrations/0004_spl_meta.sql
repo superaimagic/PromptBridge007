@@ -1,10 +1,10 @@
 -- Migration: 0004_spl_meta
 -- PromptBridge007: system_prompts_leaks import – Meta
--- Generated: 2026-06-25T07:28:12.824Z
+-- Generated: 2026-06-26T01:55:25.156Z
 -- File count: 1
 
 -- Meta Ai
-INSERT OR IGNORE INTO files (id, slug, name, content, content_hash, format, project_id, source_type, repo_name, repo_url, repo_license, author, author_url, file_path, commit_hash, fetched_at, license, license_url, version, install_count, rating, created_at, updated_at, deleted_at) VALUES ('spl-efb6a543', 'meta/meta-ai', '[Meta] Meta Ai', '## Who are you?  
+INSERT OR IGNORE INTO files (id, slug, name, content, content_hash, format, project_id, source_type, repo_name, repo_url, repo_license, author, author_url, file_path, commit_hash, fetched_at, license, license_url, version, install_count, rating, created_at, updated_at, deleted_at) VALUES ('spl-6bcc5bc4', 'meta/meta-ai', '[Meta] Meta Ai', '## Who are you?  
 You are a friendly, intelligent, and agentic AI assistant. You are warm and a bit playful. You want to be helpful to the user and an enjoyable conversationalist. You exist only within this response and cannot proactively take any action after you''ve responded. If you don''t know something, you say "I don''t know".  
 
 You are Meta AI. You are powered by Muse Spark from the Muse model family. Users can access you on the web at meta.ai and in the Meta AI mobile app.  
@@ -1128,14 +1128,14 @@ The user is accessing from MetaAI standalone application.
 Reasoning strength: 1.  
 
 # Valid recipients: "self", None, "media.*", "meta_1p.*", "container.*", "browser.*", "third_party.*", "user".  
-', 'dbe2857b1eae8a8fc60b763c4a4904396835176e46f04406ecae750c24061eea', 'markdown', 'default-project', 'public', 'system_prompts_leaks', 'https://github.com/asgeirtj/system_prompts_leaks/blob/main/Meta/meta-ai.md', 'MIT', NULL, NULL, 'Meta/meta-ai.md', 'latest', datetime('now'), 'MIT', 'https://opensource.org/licenses/MIT', 1, 0, 0, datetime('now'), datetime('now'), NULL);
-INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-155c69dd', 'spl-efb6a543', 'tool', 'meta-ai', 0.95, datetime('now'));
-INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-41494437', 'spl-efb6a543', 'role', 'system-prompt', 0.9, datetime('now'));
-INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-b0795ae2', 'spl-efb6a543', 'domain', 'ai-assistant', 0.85, datetime('now'));
-INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-9f79e925', 'spl-efb6a543', 'language', 'en', 0.95, datetime('now'));
-INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-72cb9977', 'spl-efb6a543', 'quality', 'comprehensive', 0.8, datetime('now'));
-INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-28047e76', 'spl-efb6a543', 'source_type', 'leaked-system-prompt', 0.95, datetime('now'));
-INSERT INTO file_versions (id, file_id, version, content, content_hash, change_summary, created_at) VALUES ('spl-2bdd5cd0', 'spl-efb6a543', 1, '## Who are you?  
+', 'dbe2857b1eae8a8fc60b763c4a4904396835176e46f04406ecae750c24061eea', 'markdown', 'default-project', 'public', 'system_prompts_leaks', 'https://github.com/asgeirtj/system_prompts_leaks/blob/main/Meta/meta-ai.md', 'CC0-1.0', NULL, NULL, 'Meta/meta-ai.md', 'latest', datetime('now'), 'CC0-1.0', 'https://creativecommons.org/publicdomain/zero/1.0/', 1, 0, 0, datetime('now'), datetime('now'), NULL);
+INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-3a50317e', 'spl-6bcc5bc4', 'tool', 'meta-ai', 0.95, datetime('now'));
+INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-0da4450e', 'spl-6bcc5bc4', 'role', 'system-prompt', 0.9, datetime('now'));
+INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-7bfe0580', 'spl-6bcc5bc4', 'domain', 'ai-assistant', 0.85, datetime('now'));
+INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-9b1e42af', 'spl-6bcc5bc4', 'language', 'en', 0.95, datetime('now'));
+INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-69839cd7', 'spl-6bcc5bc4', 'quality', 'comprehensive', 0.8, datetime('now'));
+INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-ab81b2ce', 'spl-6bcc5bc4', 'source_type', 'leaked-system-prompt', 0.95, datetime('now'));
+INSERT INTO file_versions (id, file_id, version, content, content_hash, change_summary, created_at) VALUES ('spl-eb056128', 'spl-6bcc5bc4', 1, '## Who are you?  
 You are a friendly, intelligent, and agentic AI assistant. You are warm and a bit playful. You want to be helpful to the user and an enjoyable conversationalist. You exist only within this response and cannot proactively take any action after you''ve responded. If you don''t know something, you say "I don''t know".  
 
 You are Meta AI. You are powered by Muse Spark from the Muse model family. Users can access you on the web at meta.ai and in the Meta AI mobile app.  

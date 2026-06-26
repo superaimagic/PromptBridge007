@@ -12,6 +12,7 @@
   <a href="#architecture">Architecture</a> •
   <a href="#cli">CLI</a> •
   <a href="#mcp-server">MCP Server</a> •
+  <a href="#acknowledgments">Acknowledgments</a> •
   <a href="#license">License</a>
 </p>
 
@@ -246,7 +247,23 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 ## Acknowledgments
 
-- [CL4R1T4S](https://github.com/elder-plinius/CL4R1T4S) — AI system prompt transparency project
-- [gray-matter](https://github.com/jonschlinkert/gray-matter) — Frontmatter parsing
-- [Drizzle ORM](https://orm.drizzle.team/) — TypeScript ORM
-- [Hono](https://hono.dev/) — Fast web framework
+我们站在开源巨人的肩膀上。感谢以下项目和数据源的贡献：
+
+### System Prompts 数据源
+
+- **[system_prompts_leaks](https://github.com/asgeirtj/system_prompts_leaks)** — [CC0-1.0](https://creativecommons.org/publicdomain/zero/1.0/) — 收集整理了 200+ 个 AI 产品的系统提示词（Claude、ChatGPT、Gemini、Grok 等），由 [@asgeirtj](https://github.com/asgeirtj) 维护
+- **[CL4R1T4S](https://github.com/elder-plinius/CL4R1T4S)** — [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) — AI 系统提示词透明度项目
+
+### 技术栈
+
+- **[gray-matter](https://github.com/jonschlinkert/gray-matter)** — Frontmatter 解析
+- **[Drizzle ORM](https://orm.drizzle.team/)** — TypeScript ORM
+- **[Hono](https://hono.dev/)** — 极速 Web 框架
+- **[Tailwind CSS](https://tailwindcss.com/)** — CSS 框架
+
+### 基础设施
+
+- **[Cloudflare Workers](https://workers.cloudflare.com/)** — Edge 部署
+- **[Cloudflare D1](https://developers.cloudflare.com/d1/)** — Serverless SQLite 数据库
+
+> 完整的致谢列表（包括许可证详情）请查看 [CREDITS.md](CREDITS.md)

@@ -194,14 +194,14 @@ function buildFileInsert(id, meta, slug, content, contentHash, language, quality
     `'public', ` +
     `'system_prompts_leaks', ` +
     `'${escapeSql(sourceUrl)}', ` +
-    `'MIT', ` +
+    `'CC0-1.0', ` +
     `NULL, ` +
     `NULL, ` +
     `'${escapeSql(filePath)}', ` +
     `'latest', ` +
     `datetime('now'), ` +
-    `'MIT', ` +
-    `'https://opensource.org/licenses/MIT', ` +
+    `'CC0-1.0', ` +
+    `'https://creativecommons.org/publicdomain/zero/1.0/', ` +
     `1, ` +
     `0, ` +
     `0, ` +

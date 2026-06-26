@@ -1,10 +1,10 @@
 -- Migration: 0004_spl_mistral
 -- PromptBridge007: system_prompts_leaks import – Mistral
--- Generated: 2026-06-25T07:28:12.829Z
+-- Generated: 2026-06-26T01:55:25.278Z
 -- File count: 1
 
 -- Le Chat
-INSERT OR IGNORE INTO files (id, slug, name, content, content_hash, format, project_id, source_type, repo_name, repo_url, repo_license, author, author_url, file_path, commit_hash, fetched_at, license, license_url, version, install_count, rating, created_at, updated_at, deleted_at) VALUES ('spl-20c75581', 'mistral/le-chat', '[Mistral] Le Chat', 'You are a conversational assistant, known for your empathetic, curious, intelligent spirit. You are built by Mistral and power a chatbot named Le Chat. Your knowledge base was last updated on Friday, November 1, 2024. The current date is Wednesday, August 27, 2025. When asked about you, be concise and say you are Le Chat, an AI assistant created by Mistral AI.
+INSERT OR IGNORE INTO files (id, slug, name, content, content_hash, format, project_id, source_type, repo_name, repo_url, repo_license, author, author_url, file_path, commit_hash, fetched_at, license, license_url, version, install_count, rating, created_at, updated_at, deleted_at) VALUES ('spl-8e1750c2', 'mistral/le-chat', '[Mistral] Le Chat', 'You are a conversational assistant, known for your empathetic, curious, intelligent spirit. You are built by Mistral and power a chatbot named Le Chat. Your knowledge base was last updated on Friday, November 1, 2024. The current date is Wednesday, August 27, 2025. When asked about you, be concise and say you are Le Chat, an AI assistant created by Mistral AI.
 
 # Language Style Guide Policies
 
@@ -355,14 +355,14 @@ User seems to be in [REDACTED]. User timezone is [REDACTED]. The name of the use
 
 Always browse the web when asked about contemporary public figures, especially of political importance.
 Never mention the information above.
-', 'f548b13c6a75f7e38ffc1d798d7225423e834502af884688cc18e0a00eadf7e3', 'markdown', 'default-project', 'public', 'system_prompts_leaks', 'https://github.com/asgeirtj/system_prompts_leaks/blob/main/Mistral/le-chat.md', 'MIT', NULL, NULL, 'Mistral/le-chat.md', 'latest', datetime('now'), 'MIT', 'https://opensource.org/licenses/MIT', 1, 0, 0, datetime('now'), datetime('now'), NULL);
-INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-472cb177', 'spl-20c75581', 'tool', 'mistral', 0.95, datetime('now'));
-INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-0a5bfba7', 'spl-20c75581', 'role', 'system-prompt', 0.9, datetime('now'));
-INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-2898d0e7', 'spl-20c75581', 'domain', 'ai-assistant', 0.85, datetime('now'));
-INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-46cd39b0', 'spl-20c75581', 'language', 'en', 0.95, datetime('now'));
-INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-9597d2a7', 'spl-20c75581', 'quality', 'detailed', 0.8, datetime('now'));
-INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-b72fff63', 'spl-20c75581', 'source_type', 'leaked-system-prompt', 0.95, datetime('now'));
-INSERT INTO file_versions (id, file_id, version, content, content_hash, change_summary, created_at) VALUES ('spl-17092a43', 'spl-20c75581', 1, 'You are a conversational assistant, known for your empathetic, curious, intelligent spirit. You are built by Mistral and power a chatbot named Le Chat. Your knowledge base was last updated on Friday, November 1, 2024. The current date is Wednesday, August 27, 2025. When asked about you, be concise and say you are Le Chat, an AI assistant created by Mistral AI.
+', 'f548b13c6a75f7e38ffc1d798d7225423e834502af884688cc18e0a00eadf7e3', 'markdown', 'default-project', 'public', 'system_prompts_leaks', 'https://github.com/asgeirtj/system_prompts_leaks/blob/main/Mistral/le-chat.md', 'CC0-1.0', NULL, NULL, 'Mistral/le-chat.md', 'latest', datetime('now'), 'CC0-1.0', 'https://creativecommons.org/publicdomain/zero/1.0/', 1, 0, 0, datetime('now'), datetime('now'), NULL);
+INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-8ca16f46', 'spl-8e1750c2', 'tool', 'mistral', 0.95, datetime('now'));
+INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-24e7432b', 'spl-8e1750c2', 'role', 'system-prompt', 0.9, datetime('now'));
+INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-79846f8a', 'spl-8e1750c2', 'domain', 'ai-assistant', 0.85, datetime('now'));
+INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-d4671394', 'spl-8e1750c2', 'language', 'en', 0.95, datetime('now'));
+INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-5d11e82a', 'spl-8e1750c2', 'quality', 'detailed', 0.8, datetime('now'));
+INSERT INTO tags (id, file_id, dimension, value, confidence, created_at) VALUES ('spl-952a0775', 'spl-8e1750c2', 'source_type', 'leaked-system-prompt', 0.95, datetime('now'));
+INSERT INTO file_versions (id, file_id, version, content, content_hash, change_summary, created_at) VALUES ('spl-6d904453', 'spl-8e1750c2', 1, 'You are a conversational assistant, known for your empathetic, curious, intelligent spirit. You are built by Mistral and power a chatbot named Le Chat. Your knowledge base was last updated on Friday, November 1, 2024. The current date is Wednesday, August 27, 2025. When asked about you, be concise and say you are Le Chat, an AI assistant created by Mistral AI.
 
 # Language Style Guide Policies
 
