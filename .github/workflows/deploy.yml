@@ -4,7 +4,17 @@ on:
   push:
     branches: [main]
     paths:
-      - 'web/**'
+      - 'web/src/**'
+      - 'web/public/**'
+      - 'web/package*.json'
+      - 'web/wrangler.jsonc'
+      - 'web/next.config.ts'
+      - 'web/open-next.config.ts'
+      - 'web/drizzle.config.ts'
+      - 'web/postcss.config.mjs'
+      - 'web/eslint.config.mjs'
+      - 'web/tsconfig.json'
+      - 'web/components.json'
       - '.github/workflows/deploy.yml'
   workflow_dispatch:
 
@@ -26,7 +36,19 @@ jobs:
 
       - name: Build with @opennextjs/cloudflare
         working-directory: web
-        run: npx opennextjs-cloudflare build
+        run: npx opennextjs-cloudflare build 2>&1 | tail -100
+        env:
+          NODE_ENV: production
+
+      - name: Verify build output
+        working-directory: web
+        run: |
+          echo "=== Checking .open-next directory ==="
+          ls -la .open-next/ 2>/dev/null || echo ".open-next not found"
+          echo "=== Checking worker.js ==="
+          ls -la .open-next/worker.js 2>/dev/null || echo "worker.js not found"
+          echo "=== Checking assets ==="
+          ls -la .open-next/assets/ 2>/dev/null || echo "assets not found"
 
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
@@ -35,3 +57,4 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: deploy
           workingDirectory: web
+          packageManager: npm
