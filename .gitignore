@@ -68,5 +68,24 @@ web/AGENTS.md
 web/CLAUDE.md
 web/test-prompt-*.md
 
+# Wrangler / Cloudflare
+.wrangler/
+web/.wrangler/
+web/.cursor/
+
+# Temp / cache
+web/tmp/
+web/scripts/db-stats.json
+web/scripts/query.json
+web/scripts/seed-d1.ps1
+web/scripts/test-query.js
+
+# Local DB
+auth/
+auth-wal/
+
+# Test reports
+Test*.md
+
 # Misc
 *.bak
