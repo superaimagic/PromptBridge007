@@ -11,16 +11,12 @@ import {
   tags,
   fileVersions,
   deployments,
-  tools,
 } from '@/lib/db/schema';
 import { success, error, now, sanitizeInput, validateInput, generateSlug, computeContentHash } from '@/lib/api/types';
 import {
-  verifyApiKey,
-  withCors,
-  unauthorizedResponse,
-  forbiddenResponse,
   type AuthContext,
 } from '@/lib/api/auth';
+import { triggerWebhooks, logAudit } from '@/lib/api/webhook-audit';
 import { formatMatrix, type PIFEntity } from '@/lib/core/FormatMatrix';
 import { toolRegistry } from '@/lib/core/ToolRegistry';
 import { nanoid } from 'nanoid';
@@ -134,7 +130,7 @@ export async function handleV1PromptsList(request: NextRequest, auth: AuthContex
 
   // Get tags for each file (filter by tool/role/domain/language/quality if specified)
   const fileIds = rows.map(r => r.id);
-  let fileTagsMap: Record<string, { dimension: string; value: string; confidence: string | null }[]> = {};
+  const fileTagsMap: Record<string, { dimension: string; value: string; confidence: string | null }[]> = {};
 
   if (fileIds.length > 0) {
     const allTags = await db.select().from(tags).where(inArray(tags.fileId, fileIds));
@@ -223,6 +219,10 @@ export async function handleV1PromptsCreate(request: NextRequest, auth: AuthCont
     contentHash,
     createdAt: timestamp,
   });
+
+  // Trigger webhook + audit log
+  triggerWebhooks(auth.projectId, 'prompt.created', id, 1);
+  logAudit(auth.projectId, auth.apiKeyId, 'prompt.create', 'file', id, 'POST', '/api/v1/prompts', 201);
 
   return NextResponse.json(success({
     id, slug, name: body.name, content_hash: contentHash, version: 1, created_at: timestamp,
@@ -326,6 +326,10 @@ export async function handleV1PromptsUpdate(request: NextRequest, auth: AuthCont
     }
   }
 
+  // Trigger webhook + audit log
+  triggerWebhooks(auth.projectId, 'prompt.updated', fileId, newVersion);
+  logAudit(auth.projectId, auth.apiKeyId, 'prompt.update', 'file', fileId, 'PUT', `/api/v1/prompts/${fileId}`, 200);
+
   return NextResponse.json(success({
     id: fileId, updated_at: updates.updatedAt, version: newVersion,
   }));
@@ -344,6 +348,10 @@ export async function handleV1PromptsDelete(request: NextRequest, auth: AuthCont
   }
 
   await db.update(files).set({ deletedAt: now(), updatedAt: now() }).where(eq(files.id, fileId));
+
+  // Trigger webhook + audit log
+  triggerWebhooks(auth.projectId, 'prompt.deleted', fileId);
+  logAudit(auth.projectId, auth.apiKeyId, 'prompt.delete', 'file', fileId, 'DELETE', `/api/v1/prompts/${fileId}`, 200);
 
   return NextResponse.json(success({ id: fileId, deleted: true }));
 }
@@ -364,7 +372,7 @@ export async function handleV1PromptsSearch(request: NextRequest, auth: AuthCont
     conditions.push(or(like(files.name, `%${query}%`), like(files.content, `%${query}%`))!);
   }
 
-  let dbQuery = db.select({
+  const dbQuery = db.select({
     id: files.id, slug: files.slug, name: files.name, format: files.format,
     license: files.license, version: files.version, createdAt: files.createdAt, updatedAt: files.updatedAt,
   }).from(files).where(and(...conditions));
@@ -373,7 +381,7 @@ export async function handleV1PromptsSearch(request: NextRequest, auth: AuthCont
 
   // Get tags for filtering
   const fileIds = rows.map(r => r.id);
-  let fileTagsMap: Record<string, { dimension: string; value: string }[]> = {};
+  const fileTagsMap: Record<string, { dimension: string; value: string }[]> = {};
   if (fileIds.length > 0) {
     const allTags = await db.select().from(tags).where(inArray(tags.fileId, fileIds));
     for (const t of allTags) {
@@ -587,4 +595,117 @@ export async function handleV1ToolsList(): Promise<NextResponse> {
  */
 export async function handleV1Health(): Promise<NextResponse> {
   return NextResponse.json(success({ status: 'ok', version: '1.0.0', timestamp: now() }));
+}
+
+/**
+ * GET /api/v1/mcp/tools — MCP tools list (public)
+ */
+export async function handleV1McpToolsList(): Promise<NextResponse> {
+  return NextResponse.json(success({
+    tools: [
+      { name: 'search_prompts', description: 'Search the prompt library (scoped to current project)', parameters: ['query', 'tool', 'domain', 'role', 'language', 'quality', 'limit', 'include_content', 'format', 'project_id'] },
+      { name: 'get_prompt', description: 'Get full prompt content by ID (verifies project ownership)', parameters: ['id', 'format', 'project_id'] },
+      { name: 'deploy_prompt', description: 'Deploy a prompt to a target tool (verifies project ownership)', parameters: ['file_id', 'tool_id', 'mode', 'custom_content', 'project_id'] },
+      { name: 'convert_format', description: 'Convert a prompt to a target format (verifies project ownership)', parameters: ['file_id', 'target_format', 'project_id'] },
+      { name: 'scan_environment', description: 'Scan for installed AI tools', parameters: ['tool_ids', 'project_id'] },
+      { name: 'sync_tool', description: 'Sync prompts with a tool directory', parameters: ['tool_id', 'direction', 'project_id'] },
+      { name: 'list_tools', description: 'List all supported AI tools', parameters: [] },
+      { name: 'suggest_similar', description: 'Suggest similar prompts (scoped to current project)', parameters: ['id', 'limit', 'project_id'] },
+    ],
+    resources: [
+      { name: 'prompt-catalog', uri: 'prompt-library://catalog', description: 'List prompts (scoped to current project)' },
+      { name: 'supported-tools', uri: 'prompt-library://tools', description: 'List supported tools' },
+      { name: 'format-matrix', uri: 'prompt-library://formats', description: 'List format conversions' },
+      { name: 'library-stats', uri: 'prompt-library://stats', description: 'Library statistics' },
+    ],
+  }));
+}
+
+/**
+ * POST /api/v1/mcp/execute — Execute MCP tool with project context
+ * Automatically injects projectId from API Key into tool arguments
+ */
+export async function handleV1McpExecute(request: NextRequest, auth: AuthContext): Promise<NextResponse> {
+  const db = getDb();
+  const body = (await request.json().catch(() => ({}))) as { tool: string; arguments?: Record<string, unknown> };
+  const { tool, arguments: rawArgs = {} } = body;
+
+  // Auto-inject projectId from auth context
+  const args: Record<string, unknown> = { ...rawArgs, project_id: auth.projectId };
+
+  try {
+    let result: unknown;
+
+    switch (tool) {
+      case 'search_prompts': {
+        const conditions = [eq(files.projectId, auth.projectId), isNull(files.deletedAt)];
+        if (args.query) {
+          const nameOrContent = or(like(files.name, `%${args.query}%`), like(files.content, `%${args.query}%`));
+          if (nameOrContent) conditions.push(nameOrContent);
+        }
+        const includeContent = args.include_content as boolean | undefined;
+        const limit = (args.limit as number) || 10;
+        const fileRows = await db.select({
+          id: files.id, name: files.name, slug: files.slug, license: files.license,
+          sourceType: files.sourceType, rating: files.rating, version: files.version,
+          ...(includeContent ? { content: files.content } : {}),
+        }).from(files).where(and(...conditions)).limit(limit).orderBy(desc(files.rating));
+        result = fileRows;
+        break;
+      }
+      case 'get_prompt': {
+        const fileRows = await db.select().from(files)
+          .where(and(eq(files.id, args.id as string), eq(files.projectId, auth.projectId), isNull(files.deletedAt))).limit(1);
+        if (fileRows.length === 0) {
+          return NextResponse.json(error('NOT_FOUND', 'Prompt not found', 404), { status: 404 });
+        }
+        result = fileRows[0];
+        break;
+      }
+      case 'list_tools': {
+        result = toolRegistry;
+        break;
+      }
+      case 'suggest_similar': {
+        // Delegate to the v1 similar handler logic
+        const sourceFile = await db.select({ id: files.id }).from(files)
+          .where(and(eq(files.id, args.id as string), eq(files.projectId, auth.projectId))).limit(1);
+        if (sourceFile.length === 0) {
+          return NextResponse.json(error('NOT_FOUND', 'Prompt not found', 404), { status: 404 });
+        }
+        // Use the same similar logic
+        const limit = (args.limit as number) || 5;
+        const sourceTags = await db.select().from(tags).where(eq(tags.fileId, args.id as string));
+        if (sourceTags.length === 0) { result = []; break; }
+        const tagDims = sourceTags.map(t => ({ dimension: t.dimension, value: t.value }));
+        const allFiles = await db.select({ id: files.id, name: files.name, slug: files.slug })
+          .from(files).where(and(eq(files.projectId, auth.projectId), isNull(files.deletedAt), ne(files.id, args.id as string)));
+        const allTags = await db.select().from(tags).where(inArray(tags.fileId, allFiles.map(f => f.id)));
+        const tagMap: Record<string, { dimension: string; value: string }[]> = {};
+        for (const t of allTags) {
+          if (!tagMap[t.fileId]) tagMap[t.fileId] = [];
+          tagMap[t.fileId].push({ dimension: t.dimension, value: t.value });
+        }
+        result = allFiles.map(f => {
+          const ft = tagMap[f.id] || [];
+          const matched = tagDims.filter(st => ft.some(t => t.dimension === st.dimension && t.value === st.value));
+          return { file: f, score: matched.length / sourceTags.length, matched_tags: matched.map(m => `${m.dimension}:${m.value}`) };
+        }).filter(r => r.score > 0).sort((a, b) => b.score - a.score).slice(0, limit);
+        break;
+      }
+      default:
+        // For deploy, convert, scan, sync — these require local filesystem and may not work on Workers
+        // Return a helpful message
+        return NextResponse.json(error(
+          'TOOL_NOT_AVAILABLE',
+          `Tool '${tool}' requires local filesystem access. Use the CLI or Stdio MCP server for this tool.`,
+          501,
+        ), { status: 501 });
+    }
+
+    return NextResponse.json(success(result));
+  } catch (e) {
+    const message = e instanceof Error ? e.message : 'Unknown error';
+    return NextResponse.json(error('MCP_ERROR', message, 500), { status: 500 });
+  }
 }

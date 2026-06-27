@@ -9,6 +9,7 @@ import {
   Rocket,
   RefreshCw,
   Settings,
+  ShieldCheck,
   ChevronsLeft,
   ChevronsRight,
 } from 'lucide-react'
@@ -31,6 +32,7 @@ const navItems: NavItem[] = [
 ]
 
 const bottomNavItems: NavItem[] = [
+  { label: '管理后台', href: '/app/admin', icon: ShieldCheck },
   { label: '设置', href: '/app/settings', icon: Settings },
 ]
 

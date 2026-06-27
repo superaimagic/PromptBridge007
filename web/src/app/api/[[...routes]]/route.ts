@@ -28,6 +28,7 @@ import {
   adminUnauthorizedResponse,
   CORS_HEADERS,
 } from '@/lib/api/auth';
+import { checkRateLimit, rateLimitResponse } from '@/lib/api/rate-limit';
 import {
   handleV1PromptsList,
   handleV1PromptsCreate,
@@ -41,6 +42,8 @@ import {
   handleV1PromptsConvert,
   handleV1ToolsList,
   handleV1Health,
+  handleV1McpToolsList,
+  handleV1McpExecute,
 } from '@/lib/api/v1-handlers';
 import {
   handleAdminProjectsList,
@@ -1610,12 +1613,21 @@ async function handleRequest(request: NextRequest): Promise<NextResponse> {
       if (v1Path[0] === 'tools' && method === 'GET') {
         return withCors(await handleV1ToolsList());
       }
+      if (v1Path[0] === 'mcp' && v1Path[1] === 'tools' && method === 'GET') {
+        return withCors(await handleV1McpToolsList());
+      }
 
       // All other v1 endpoints require API Key authentication
       const auth = await verifyApiKey(request);
       if (!auth) {
         const apiKey = request.headers.get('x-api-key');
         return withCors(apiKey ? forbiddenResponse() : unauthorizedResponse());
+      }
+
+      // Phase 4: Rate limit check (per API Key, sliding window)
+      const rateLimitResult = checkRateLimit(auth.apiKeyId, auth.rateLimit);
+      if (!rateLimitResult.allowed) {
+        return withCors(rateLimitResponse(rateLimitResult.retryAfter));
       }
 
       // GET /api/v1/prompts
@@ -1657,6 +1669,11 @@ async function handleRequest(request: NextRequest): Promise<NextResponse> {
       // DELETE /api/v1/prompts/:id
       if (v1Path[0] === 'prompts' && v1Path.length === 2 && method === 'DELETE') {
         return withCors(await handleV1PromptsDelete(request, auth, v1Path[1]));
+      }
+
+      // POST /api/v1/mcp/execute — MCP tool execution with project context
+      if (v1Path[0] === 'mcp' && v1Path[1] === 'execute' && v1Path.length === 2 && method === 'POST') {
+        return withCors(await handleV1McpExecute(request, auth));
       }
 
       return withCors(NextResponse.json(

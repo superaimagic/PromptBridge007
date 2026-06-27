@@ -212,7 +212,7 @@ export async function handleAdminApiKeysDelete(keyId: string): Promise<NextRespo
   const db = getDb();
   const timestamp = now();
 
-  const result = await db.update(apiKeys).set({
+  await db.update(apiKeys).set({
     status: 'revoked',
     revokedAt: timestamp,
   }).where(eq(apiKeys.id, keyId));

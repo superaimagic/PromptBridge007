@@ -328,30 +328,43 @@ PromptBridge007 当前拥有 31 个 API 端点、200+ 系统提示词、8 个 MC
 
 ## 12. 实施路线图
 
-### Phase 1：安全基线（第 1 周）
-- [ ] 实现 API Key 认证中间件
-- [ ] 新增 `api_keys` 表和 CRUD 端点
-- [ ] 所有 `/api/v1/*` 端点强制 API Key 认证
-- [ ] 修复 `POST /api/init` 安全漏洞（移除 force 或限制为管理员）
-- [ ] CORS 白名单配置
+### Phase 1：安全基线（第 1 周） ✅ 已完成
+- [x] 实现 API Key 认证中间件 (`web/src/lib/api/auth.ts`)
+- [x] 新增 `api_keys`/`webhooks`/`audit_logs` 表和 CRUD 端点
+- [x] 所有 `/api/v1/*` 端点强制 API Key 认证
+- [x] 修复 `POST /api/init` 安全漏洞（force=true 需管理员 Token）
+- [x] CORS 配置（Access-Control-Allow-Origin/Methods/Headers）
+- [x] 修复 client.ts 前后端契约不一致（/deployments→/deploy, sync 参数）
+- [x] 推送到 GitHub (commit: fd78ce7)
+- [x] D1 数据库迁移完成 (3 个新表 + 7 个索引)
 
-### Phase 2：项目隔离（第 2 周）
-- [ ] `files` 查询/创建/更新/删除全部绑定 projectId
-- [ ] MCP 工具支持 projectId 参数
-- [ ] `client.ts` 修复前后端契约不一致
-- [ ] 项目隔离自动化测试
+### Phase 2：项目隔离（第 2 周） ✅ 已完成
+- [x] `files` 查询/创建/更新/删除全部绑定 projectId（v1-handlers.ts 所有处理器）
+- [x] MCP 工具支持 projectId 参数（8 个工具全部支持，含 `PB_PROJECT_ID` 环境变量回退）
+- [x] `client.ts` 修复前后端契约不一致（/deployments→/deploy, sync 参数）
+- [x] 项目隔离自动化测试（API Key 验证 + 自动注入 projectId）
+- [x] 推送到 GitHub (commit: 1e141c0)
 
-### Phase 3：分发能力（第 3 周）
-- [ ] Webhook 通知系统
-- [ ] Prompt 版本历史 API
-- [ ] Prompt 回滚 API
-- [ ] 审计日志
+### Phase 3：分发能力（第 3 周） ✅ 已完成
+- [x] Webhook 通知系统（triggerWebhooks fire-and-forget，3 种事件：prompt.created/updated/deleted）
+- [x] Prompt 版本历史 API（GET /api/v1/prompts/:id/versions）
+- [x] Prompt 回滚 API（POST /api/v1/prompts/:id/rollback/:version，创建新版本而非覆盖）
+- [x] 审计日志（logAudit 记录所有 v1 写操作 + admin 写操作）
+- [x] MCP HTTP 端点接入 API Key 认证（/api/v1/mcp/execute 自动注入 projectId）
 
-### Phase 4：速率限制与运维（第 4 周）
-- [ ] Cloudflare KV 速率限制
-- [ ] API Key 管理后台 UI
-- [ ] 审计日志查看 UI
-- [ ] 清理 Hono 死代码
+### Phase 4：速率限制与运维（第 4 周） ✅ 已完成
+- [x] 速率限制中间件（rate-limit.ts，基于内存滑动窗口，per API Key 隔离，默认 100 req/min）
+- [x] 集成到 v1 路由：API Key 验证成功后、端点分发前调用 checkRateLimit()，返回 429 + Retry-After
+- [x] API Key 管理后台 UI（/app/admin 页面，4 个 Tab：项目/API Keys/Webhooks/审计日志）
+- [x] 审计日志查看 UI（分页查询、按 action 着色、按状态码着色）
+- [x] 清理 Hono 死代码（删除 11 个文件：lib/api/index.ts + middleware.ts + routes/*.ts）
+- [x] 从 package.json 移除 hono 依赖
+- [x] TypeScript 编译验证（tsc --noEmit）通过
+- [x] ESLint 验证（--max-warnings 0）通过
+- [x] Dev server 实测：/app/admin 200, /api/v1/health 200, /api/admin 无 token 401
+- [x] 推送到 GitHub
+
+> **注**：速率限制使用 Workers isolate 内存（per-instance），冷启动会重置。生产环境若需全局精确限流，可后续升级到 Cloudflare KV 或 Durable Objects。当前实现已能满足基础防滥用需求。
 
 ---
 

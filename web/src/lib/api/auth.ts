@@ -7,7 +7,7 @@ import * as crypto from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { eq, and } from 'drizzle-orm';
 import { getDb } from '@/lib/db';
-import { apiKeys, projects } from '@/lib/db/schema';
+import { apiKeys } from '@/lib/db/schema';
 import { error as apiError } from '@/lib/api/types';
 
 // Admin token from environment variable
