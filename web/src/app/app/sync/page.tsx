@@ -44,7 +44,6 @@ export default function SyncPage() {
     try {
       await api.sync({
         direction,
-        file_id: dep.file_id,
         tool_id: toolId,
       });
       loadData();
@@ -66,8 +65,8 @@ export default function SyncPage() {
       for (const dep of deployments) {
         await api.sync({
           direction: 'to_tool',
-          file_id: dep.file_id,
           tool_id: dep.tool_id,
+          sync_all: true,
         });
       }
       loadData();

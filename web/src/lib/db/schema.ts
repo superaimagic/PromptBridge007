@@ -159,3 +159,59 @@ export const publicSources = sqliteTable('public_sources', {
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
 });
+
+// Table: api_keys (项目级 API Key 认证)
+export const apiKeys = sqliteTable('api_keys', {
+  id: text('id').primaryKey(),
+  projectId: text('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
+  keyHash: text('key_hash').notNull().unique(),
+  keyPrefix: text('key_prefix').notNull(),
+  name: text('name'),
+  status: text('status').notNull().default('active'), // active | revoked
+  rateLimit: integer('rate_limit').default(100),
+  lastUsedAt: text('last_used_at'),
+  createdAt: text('created_at').notNull(),
+  revokedAt: text('revoked_at'),
+}, (table) => [
+  index('idx_api_keys_project_id').on(table.projectId),
+  index('idx_api_keys_key_hash').on(table.keyHash),
+  index('idx_api_keys_status').on(table.status),
+]);
+
+// Table: webhooks (项目级事件通知)
+export const webhooks = sqliteTable('webhooks', {
+  id: text('id').primaryKey(),
+  projectId: text('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
+  url: text('url').notNull(),
+  events: text('events').notNull(), // JSON array
+  secret: text('secret'),
+  status: text('status').notNull().default('active'), // active | disabled
+  lastTriggeredAt: text('last_triggered_at'),
+  lastResponseStatus: integer('last_response_status'),
+  failureCount: integer('failure_count').default(0),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+}, (table) => [
+  index('idx_webhooks_project_id').on(table.projectId),
+  index('idx_webhooks_status').on(table.status),
+]);
+
+// Table: audit_logs (审计日志)
+export const auditLogs = sqliteTable('audit_logs', {
+  id: text('id').primaryKey(),
+  projectId: text('project_id'),
+  apiKeyId: text('api_key_id'),
+  action: text('action').notNull(),
+  resourceType: text('resource_type'),
+  resourceId: text('resource_id'),
+  method: text('method'),
+  path: text('path'),
+  statusCode: integer('status_code'),
+  ipAddress: text('ip_address'),
+  userAgent: text('user_agent'),
+  createdAt: text('created_at').notNull(),
+}, (table) => [
+  index('idx_audit_logs_project_id').on(table.projectId),
+  index('idx_audit_logs_action').on(table.action),
+  index('idx_audit_logs_created_at').on(table.createdAt),
+]);

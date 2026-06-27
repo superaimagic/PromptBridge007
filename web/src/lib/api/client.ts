@@ -235,12 +235,12 @@ export const api = {
         if (v !== undefined && v !== '') query.set(k, String(v));
       });
     }
-    return request<DeploymentInfo[]>(`/deployments?${query.toString()}`);
+    return request<DeploymentInfo[]>(`/deploy?${query.toString()}`);
   },
 
   // Sync
-  sync: (data: { direction: 'to_tool' | 'from_tool'; file_id: string; tool_id: string }) =>
-    request<{ direction: string; file_id: string; tool_id: string; status: string; synced_at: string }>(
+  sync: (data: { direction: 'to_tool' | 'from_tool'; tool_id: string; sync_all?: boolean }) =>
+    request<{ direction: string; tool_id: string; tool_name: string; status: string; files_synced: number; conflicts: number; errors: string[] }>(
       '/sync',
       { method: 'POST', body: JSON.stringify(data) }
     ),
@@ -249,7 +249,7 @@ export const api = {
   getPublicSources: () => request<PublicSource[]>('/public-sources'),
 
   syncPublicSource: (sourceId: string) =>
-    request<{ source_id: string; status: string; started_at: string }>(
+    request<{ source_id: string; source_name: string; status: string; files_found: number; files_imported: number; files_updated: number; files_skipped: number; errors: string[] }>(
       `/public-sources/${sourceId}/sync`,
       { method: 'POST' }
     ),

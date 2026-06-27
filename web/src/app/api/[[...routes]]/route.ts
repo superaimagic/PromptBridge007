@@ -17,6 +17,45 @@ import { success, error, now, sanitizeInput, validateInput, generateSlug, comput
 import { formatMatrix, type PIFEntity } from '@/lib/core/FormatMatrix';
 import { toolRegistry } from '@/lib/core/ToolRegistry';
 
+// Phase 1: API Key auth + v1/admin routes
+import {
+  verifyApiKey,
+  verifyAdminToken,
+  handleCors,
+  withCors,
+  unauthorizedResponse,
+  forbiddenResponse,
+  adminUnauthorizedResponse,
+  CORS_HEADERS,
+} from '@/lib/api/auth';
+import {
+  handleV1PromptsList,
+  handleV1PromptsCreate,
+  handleV1PromptsDetail,
+  handleV1PromptsUpdate,
+  handleV1PromptsDelete,
+  handleV1PromptsSearch,
+  handleV1PromptsVersions,
+  handleV1PromptsRollback,
+  handleV1PromptsSimilar,
+  handleV1PromptsConvert,
+  handleV1ToolsList,
+  handleV1Health,
+} from '@/lib/api/v1-handlers';
+import {
+  handleAdminProjectsList,
+  handleAdminProjectsCreate,
+  handleAdminProjectsGet,
+  handleAdminProjectsUpdate,
+  handleAdminProjectsDelete,
+  handleAdminApiKeysList,
+  handleAdminApiKeysCreate,
+  handleAdminApiKeysDelete,
+  handleAdminWebhooksList,
+  handleAdminWebhooksCreate,
+  handleAdminAuditLogsList,
+} from '@/lib/api/admin-handlers';
+
 // Lazy-load engines that depend on Node.js APIs (fs, os, child_process)
 // These cannot be imported at module level in Cloudflare Workers
 async function getScanEngine() {
@@ -146,8 +185,16 @@ function buildTagValues(
 async function handleInitPost(request: NextRequest): Promise<NextResponse> {
   await initDbForRequest();
   try {
+    // 🔒 Security fix: force=true requires admin token
     const body = (await request.json().catch(() => ({}))) as { force?: boolean };
     if (body.force) {
+      // Check admin token for destructive operation
+      if (!verifyAdminToken(request)) {
+        return NextResponse.json(
+          error('FORBIDDEN', 'Admin token required for force reinitialize. Use X-Admin-Token header.', 403),
+          { status: 403 },
+        );
+      }
       const { dropAllTables, initAndSeed: reinit } = await import('@/lib/db/init');
       await dropAllTables();
       await reinit();
@@ -1531,6 +1578,11 @@ async function handleRequest(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl;
   const method = request.method;
 
+  // Handle CORS preflight
+  if (method === 'OPTIONS') {
+    return handleCors();
+  }
+
   // Strip trailing slash for consistent matching
   const path = pathname.endsWith('/') && pathname.length > 1 ? pathname.slice(0, -1) : pathname;
 
@@ -1544,6 +1596,139 @@ async function handleRequest(request: NextRequest): Promise<NextResponse> {
   const segments = routePath.split('/').filter(Boolean);
 
   try {
+    // ═══════════════════════════════════════════════════════════════════════
+    // Phase 1: /api/v1/* — Public API with API Key authentication
+    // ═══════════════════════════════════════════════════════════════════════
+    if (segments[0] === 'v1') {
+      await initDbForRequest();
+      const v1Path = segments.slice(1); // Remove 'v1'
+
+      // Public endpoints (no auth needed)
+      if (v1Path[0] === 'health' && method === 'GET') {
+        return withCors(await handleV1Health());
+      }
+      if (v1Path[0] === 'tools' && method === 'GET') {
+        return withCors(await handleV1ToolsList());
+      }
+
+      // All other v1 endpoints require API Key authentication
+      const auth = await verifyApiKey(request);
+      if (!auth) {
+        const apiKey = request.headers.get('x-api-key');
+        return withCors(apiKey ? forbiddenResponse() : unauthorizedResponse());
+      }
+
+      // GET /api/v1/prompts
+      if (v1Path[0] === 'prompts' && v1Path.length === 1 && method === 'GET') {
+        return withCors(await handleV1PromptsList(request, auth));
+      }
+      // POST /api/v1/prompts
+      if (v1Path[0] === 'prompts' && v1Path.length === 1 && method === 'POST') {
+        return withCors(await handleV1PromptsCreate(request, auth));
+      }
+      // POST /api/v1/prompts/search (must be before /:id)
+      if (v1Path[0] === 'prompts' && v1Path[1] === 'search' && v1Path.length === 2 && method === 'POST') {
+        return withCors(await handleV1PromptsSearch(request, auth));
+      }
+      // GET /api/v1/prompts/similar/:id (must be before /:id)
+      if (v1Path[0] === 'prompts' && v1Path[1] === 'similar' && v1Path.length === 3 && method === 'GET') {
+        return withCors(await handleV1PromptsSimilar(request, auth, v1Path[2]));
+      }
+      // GET /api/v1/prompts/:id/versions
+      if (v1Path[0] === 'prompts' && v1Path[2] === 'versions' && v1Path.length === 3 && method === 'GET') {
+        return withCors(await handleV1PromptsVersions(request, auth, v1Path[1]));
+      }
+      // POST /api/v1/prompts/:id/rollback/:version
+      if (v1Path[0] === 'prompts' && v1Path[2] === 'rollback' && v1Path.length === 4 && method === 'POST') {
+        return withCors(await handleV1PromptsRollback(request, auth, v1Path[1], v1Path[3]));
+      }
+      // POST /api/v1/prompts/:id/convert
+      if (v1Path[0] === 'prompts' && v1Path[2] === 'convert' && v1Path.length === 3 && method === 'POST') {
+        return withCors(await handleV1PromptsConvert(request, auth, v1Path[1]));
+      }
+      // GET /api/v1/prompts/:id
+      if (v1Path[0] === 'prompts' && v1Path.length === 2 && method === 'GET') {
+        return withCors(await handleV1PromptsDetail(request, auth, v1Path[1]));
+      }
+      // PUT /api/v1/prompts/:id
+      if (v1Path[0] === 'prompts' && v1Path.length === 2 && method === 'PUT') {
+        return withCors(await handleV1PromptsUpdate(request, auth, v1Path[1]));
+      }
+      // DELETE /api/v1/prompts/:id
+      if (v1Path[0] === 'prompts' && v1Path.length === 2 && method === 'DELETE') {
+        return withCors(await handleV1PromptsDelete(request, auth, v1Path[1]));
+      }
+
+      return withCors(NextResponse.json(
+        error('NOT_FOUND', `V1 route not found: ${method} /api/v1/${v1Path.join('/')}`, 404),
+        { status: 404 },
+      ));
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Phase 1: /api/admin/* — Admin endpoints with admin token
+    // ═══════════════════════════════════════════════════════════════════════
+    if (segments[0] === 'admin') {
+      await initDbForRequest();
+
+      // All admin endpoints require admin token
+      if (!verifyAdminToken(request)) {
+        return withCors(adminUnauthorizedResponse());
+      }
+
+      const adminPath = segments.slice(1); // Remove 'admin'
+
+      // Projects
+      if (adminPath[0] === 'projects' && adminPath.length === 1 && method === 'GET') {
+        return withCors(await handleAdminProjectsList());
+      }
+      if (adminPath[0] === 'projects' && adminPath.length === 1 && method === 'POST') {
+        return withCors(await handleAdminProjectsCreate(request));
+      }
+      if (adminPath[0] === 'projects' && adminPath.length === 2 && method === 'GET') {
+        return withCors(await handleAdminProjectsGet(adminPath[1]));
+      }
+      if (adminPath[0] === 'projects' && adminPath.length === 2 && method === 'PUT') {
+        return withCors(await handleAdminProjectsUpdate(request, adminPath[1]));
+      }
+      if (adminPath[0] === 'projects' && adminPath.length === 2 && method === 'DELETE') {
+        return withCors(await handleAdminProjectsDelete(adminPath[1]));
+      }
+
+      // API Keys
+      if (adminPath[0] === 'api-keys' && adminPath.length === 1 && method === 'GET') {
+        return withCors(await handleAdminApiKeysList());
+      }
+      if (adminPath[0] === 'api-keys' && adminPath.length === 1 && method === 'POST') {
+        return withCors(await handleAdminApiKeysCreate(request));
+      }
+      if (adminPath[0] === 'api-keys' && adminPath.length === 2 && method === 'DELETE') {
+        return withCors(await handleAdminApiKeysDelete(adminPath[1]));
+      }
+
+      // Webhooks
+      if (adminPath[0] === 'webhooks' && adminPath.length === 1 && method === 'GET') {
+        return withCors(await handleAdminWebhooksList());
+      }
+      if (adminPath[0] === 'webhooks' && adminPath.length === 1 && method === 'POST') {
+        return withCors(await handleAdminWebhooksCreate(request));
+      }
+
+      // Audit Logs
+      if (adminPath[0] === 'audit-logs' && adminPath.length === 1 && method === 'GET') {
+        return withCors(await handleAdminAuditLogsList(request));
+      }
+
+      return withCors(NextResponse.json(
+        error('NOT_FOUND', `Admin route not found: ${method} /api/admin/${adminPath.join('/')}`, 404),
+        { status: 404 },
+      ));
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Legacy routes: /api/* (no auth, backward compatible)
+    // ═══════════════════════════════════════════════════════════════════════
+
     // ─── POST /api/init ─────────────────────────────────────────────────
     if (routePath === 'init' && method === 'POST') {
       return await handleInitPost(request);
